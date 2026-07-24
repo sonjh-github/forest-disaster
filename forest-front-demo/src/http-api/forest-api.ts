@@ -44,6 +44,8 @@ export const forestApi = {
     httpApi<PageResponse<ApiRecord>>(`/api/v1/events/${encodeURIComponent(eventId)}/personnel-positions/latest?limit=200`),
   assets: (limit = 200) => httpApi<PageResponse<ApiRecord>>(`/api/v1/assets?limit=${limit}`),
   integrations: () => httpApi<DataResponse<IntegrationCapability[]>>("/api/v1/integrations"),
+  acknowledgeAlert: (alertId: string) =>
+    httpApi<{ status: string }>(`/api/v1/alerts/${encodeURIComponent(alertId)}/acknowledge`, { method: "POST" }),
 };
 
 export interface EventOverview {
