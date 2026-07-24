@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>forest-api-shoot</title>
+  <meta name="description" content="산림재난 장비·통신·AI 연동 기능 모사 테스트">
+  <link rel="stylesheet" href="/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">F</span>
+      <div><strong>산림재난 연동 모사</strong><small>FOREST INTEGRATION TEST CONSOLE</small></div>
+    </div>
+    <div class="header-actions">
+      <span class="timeout-badge">제한시간 5초</span>
+      <span id="connection" class="connection"><i></i>연결 확인 중</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">DEVICE & AI INTEGRATION</p>
+        <h1>기능별 연동 테스트</h1>
+        <p>장비 텔레메트리와 AI 분석 결과를 백엔드 API 계약에 맞춰 독립적으로 검증합니다.</p>
+      </div>
+      <div id="authPanel" class="auth-panel">
+        <label for="controlKey">제어 키</label>
+        <div><input id="controlKey" type="password" autocomplete="off" placeholder="SIMULATOR_CONTROL_KEY"><button id="connectBtn">연결</button></div>
+        <small id="authMessage">키는 브라우저 메모리에만 유지됩니다.</small>
+      </div>
+    </section>
+
+    <section class="overview" aria-label="테스트 현황">
+      <div><span>전체 기능</span><strong id="totalCount">0</strong></div>
+      <div><span>통신 장비</span><strong id="communicationCount">0</strong></div>
+      <div><span>AI 모델</span><strong id="aiCount">0</strong></div>
+      <div><span>최근 결과</span><strong id="lastSummary">대기</strong></div>
+    </section>
+
+    <section class="toolbar">
+      <div class="filter-group" aria-label="도메인 필터">
+        <button class="filter active" data-filter-group="domain" data-filter="all">전체</button>
+        <button class="filter" data-filter-group="domain" data-filter="common">공통</button>
+        <button class="filter" data-filter-group="domain" data-filter="wildfire">산불</button>
+        <button class="filter" data-filter-group="domain" data-filter="landslide">산사태</button>
+      </div>
+      <div class="filter-group" aria-label="기능 유형 필터">
+        <button class="filter active" data-filter-group="category" data-filter="all">전체 유형</button>
+        <button class="filter" data-filter-group="category" data-filter="communication">통신</button>
+        <button class="filter" data-filter-group="category" data-filter="ai">AI</button>
+      </div>
+      <div class="selection-actions">
+        <span id="selectedCount">0개 선택</span>
+        <button id="clearSelectionBtn" class="clear-selection">선택 해제</button>
+        <button id="runSelectedBtn" class="run-selected" disabled>선택 기능 실행</button>
+        <button id="continuousBtn" class="continuous-test" disabled>지속 테스트 시작</button>
+        <button id="runAllBtn" class="run-all">전체 결과 테스트</button>
+      </div>
+    </section>
+
+    <section class="test-mode-bar" aria-label="테스트 변화 및 임의 상황">
+      <div>
+        <strong>테스트 모드</strong>
+        <button id="gradualModeBtn" class="mode-button" aria-pressed="false">미세 변화 모드 끔</button>
+      </div>
+      <div class="condition-buttons">
+        <strong>임의 상황</strong>
+        <button data-condition="network-outage" disabled>통신망 단절</button>
+        <button data-condition="high-latency" disabled>지연 급증</button>
+        <button data-condition="weak-signal" disabled>신호 약화</button>
+        <button data-condition="recovery" disabled>정상 복구</button>
+      </div>
+    </section>
+
+    <section id="testGrid" class="test-grid" aria-live="polite"></section>
+
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
