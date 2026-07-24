@@ -1,0 +1,63 @@
+openapi: 3.1.0
+info:
+  title: Forest Integration Adapter API
+  version: 1.0.0
+servers:
+  - url: /api/v1
+paths:
+  /integrations:
+    get:
+      summary: 장비·통신·AI 연동 기능 목록
+      responses:
+        "200":
+          description: 연동 기능과 설정 상태
+  /integrations/{capabilityId}/invoke:
+    post:
+      summary: 외부 장비 또는 AI 서비스에 JSON 요청
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/IntegrationEnvelope"}
+      responses:
+        "200": {description: 외부 호출 정상 처리}
+        "400": {description: 계약 오류 또는 외부 호출 실패}
+  /integrations/{capabilityId}/results:
+    post:
+      summary: 장비 텔레메트리 또는 AI 분석 결과 수신
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/IntegrationEnvelope"}
+      responses:
+        "200": {description: 결과 검증 및 저장 완료}
+        "400": {description: 계약 오류 또는 저장 실패}
+components:
+  parameters:
+    CapabilityId:
+      name: capabilityId
+      in: path
+      required: true
+      schema: {type: string}
+  schemas:
+    IntegrationEnvelope:
+      type: object
+      required: [context, data]
+      properties:
+        context:
+          type: object
+          required: [eventId, requestId, sourceSystem, occurredAt, schemaVersion]
+          properties:
+            eventId: {type: string, format: uuid}
+            requestId: {type: string}
+            sourceSystem: {type: string}
+            occurredAt: {type: string, format: date-time}
+            schemaVersion: {type: string, const: "1.0"}
+        data:
+          type: object
+          additionalProperties: true
