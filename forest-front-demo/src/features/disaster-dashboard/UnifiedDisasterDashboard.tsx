@@ -3,6 +3,7 @@ import { forestApi, loadEventOverview, type EventOverview, type ForestEvent, typ
 import LivePositionMap from "./LivePositionMap";
 import { OperationsPanel, type PanelTab } from "./OperationsPanel";
 import { DomainFeatureModals } from "./DomainFeatureModals";
+import { HardwareServerPanel } from "./HardwareServerPanel";
 import "./unified-disaster-dashboard.css";
 
 const POLL_INTERVAL_MS = 1_000;
@@ -299,6 +300,8 @@ export default function UnifiedDisasterDashboard() {
       </div>
 
       {/* 3. 중앙 GIS 지도 및 오퍼레이션 우측 패널 */}
+      <HardwareServerPanel />
+
       <main className="dashboard-main-content">
         {/* 지도 영역 */}
         <div className="map-container-area">
