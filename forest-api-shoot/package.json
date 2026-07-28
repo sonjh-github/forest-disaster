@@ -5,7 +5,7 @@
   "type": "module",
   "engines": { "node": ">=22" },
   "scripts": {
-    "dev": "node --watch --env-file=.env src/server.js",
+    "dev": "node --watch --env-file-if-exists=.env src/server.js",
     "start": "node src/server.js",
     "dry-run": "node --env-file=.env.dry-run src/server.js",
     "test:integrations": "node --env-file=.env src/run-integration-tests.js",
