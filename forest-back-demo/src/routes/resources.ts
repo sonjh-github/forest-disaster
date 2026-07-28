@@ -12,6 +12,7 @@ import {
   wildfireResources,
 } from "../services/database.js";
 import type { AppEnv, ResourceDefinition } from "../types.js";
+import { assertRegisteredAssetId } from "../services/asset-identity.js";
 
 export const resourceRoutes = new Hono<AppEnv>();
 
@@ -34,8 +35,14 @@ function page(c: Context<AppEnv>) {
 resourceRoutes.post("/:eventId/:kind{asset-statuses|personnel-positions}:batch", requireScope("forest.ingest"), async (c) => {
   const body = await c.req.json<{ items?: unknown[] }>();
   const table = c.req.param("kind") === "asset-statuses" ? "asset_status" : "personnel_position";
-  const items = (body.items ?? []).map((item) => ({ ...toDatabase(item), event_id: c.req.param("eventId") }));
+  const items: Record<string, unknown>[] = (body.items ?? []).map((item) => ({
+    ...toDatabase(item),
+    event_id: c.req.param("eventId"),
+  }));
   const results = await Promise.allSettled(items.map(async (item) => {
+    if (table === "asset_status") {
+      item.asset_id = await assertRegisteredAssetId(item.asset_id);
+    }
     const { data, error } = await supabase.schema("core").from(table).insert(item).select("*").single();
     if (error) throw error;
     return toApi(data);
