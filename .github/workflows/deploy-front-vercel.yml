@@ -1,0 +1,53 @@
+name: 프론트엔드 배포
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "forest-front-demo/**"
+      - ".github/workflows/deploy-front-vercel.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forest-front-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Vercel 프로덕션 배포
+    runs-on: ubuntu-latest
+    environment: front-production
+    defaults:
+      run:
+        working-directory: forest-front-demo
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONT_PROJECT_ID }}
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: forest-front-demo/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 테스트
+        run: npm test
+
+      - name: Vercel 환경 가져오기
+        run: npx vercel@58.0.0 pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: 프로덕션 빌드
+        run: npx vercel@58.0.0 build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: 프로덕션 배포
+        run: npx vercel@58.0.0 deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}"

@@ -1,0 +1,42 @@
+name: GCS 어댑터 검증
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "forest-gcs-adapter/**"
+      - ".github/workflows/verify-gcs-adapter.yml"
+  pull_request:
+    paths:
+      - "forest-gcs-adapter/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 현장 배포 전 검증
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: forest-gcs-adapter
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: forest-gcs-adapter/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 형식 검사
+        run: npm run typecheck
+
+      - name: 테스트
+        run: npm test
