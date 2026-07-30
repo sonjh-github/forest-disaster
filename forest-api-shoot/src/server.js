@@ -45,6 +45,7 @@ async function body(request) {
 
 async function pulseAllFieldDevices() {
   if (config.dryRun) return { ok: true, dryRun: true, targets: { assets: 0, personnel: 0 } };
+  if (!config.fieldSimulatorUrl) return { ok: true, skipped: true, reason: "FIELD_SIMULATOR_NOT_CONFIGURED" };
   try {
     const response = await fetch(`${config.fieldSimulatorUrl}/v1/pulse-all`, {
       method: "POST",

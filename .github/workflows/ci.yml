@@ -1,0 +1,54 @@
+name: 통합 검증
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: forest-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: ${{ matrix.label }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: 백엔드
+            directory: forest-back-demo
+            command: npm test && npm run build
+          - label: GCS 어댑터
+            directory: forest-gcs-adapter
+            command: npm test && npm run build
+          - label: 연동 검증 서버
+            directory: forest-api-shoot
+            command: npm test
+          - label: 통합상황판
+            directory: forest-front-demo
+            command: npm run build
+    defaults:
+      run:
+        working-directory: ${{ matrix.directory }}
+    steps:
+      - name: 소스 체크아웃
+        uses: actions/checkout@v4
+
+      - name: Node.js 설정
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: ${{ matrix.directory }}/package-lock.json
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 검증 실행
+        run: ${{ matrix.command }}

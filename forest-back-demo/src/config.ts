@@ -13,8 +13,8 @@ function numberValue(name: string, fallback: number): number {
 }
 
 export const config = {
-  host: process.env.HOST?.trim() || "0.0.0.0",
-  port: numberValue("PORT", 8000),
+  host: process.env.HOST?.trim() || "127.0.0.1",
+  port: numberValue("PORT", 18000),
   corsOrigin: process.env.CORS_ORIGIN?.trim() || "*",
   authRequired: process.env.AUTH_REQUIRED === "true",
   jwtSecret: process.env.JWT_SECRET?.trim() || "local-demo-secret-change-me",

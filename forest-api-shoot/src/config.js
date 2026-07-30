@@ -9,11 +9,11 @@ export function loadConfig() {
   const config = {
     dryRun,
     apiBaseUrl: process.env.API_BASE_URL?.replace(/\/$/, ""),
-    fieldSimulatorUrl: (process.env.FIELD_SIMULATOR_URL ?? "http://127.0.0.1:8788").replace(/\/$/, ""),
+    fieldSimulatorUrl: (process.env.FIELD_SIMULATOR_URL ?? "").replace(/\/$/, ""),
     controlKey: process.env.SIMULATOR_CONTROL_KEY,
     requireControlKey: process.env.SIMULATOR_REQUIRE_CONTROL_KEY !== "false",
-    host: process.env.SIMULATOR_HOST ?? "0.0.0.0",
-    port: positiveNumber("PORT", positiveNumber("SIMULATOR_PORT", 8787)),
+    host: process.env.SIMULATOR_HOST ?? "127.0.0.1",
+    port: positiveNumber("PORT", positiveNumber("SIMULATOR_PORT", 18787)),
     requestTimeoutMs: 5_000,
   };
   if (config.requireControlKey && (!config.controlKey || config.controlKey.length < 8)) {

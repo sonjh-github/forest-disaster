@@ -10,7 +10,7 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-PowerShell 실행 정책으로 `npm.ps1` 오류가 나면 `npm` 대신 `npm.cmd`를 사용합니다. 기본 주소는 `http://127.0.0.1:8000`입니다.
+PowerShell 실행 정책으로 `npm.ps1` 오류가 나면 `npm` 대신 `npm.cmd`를 사용합니다. 기본 주소는 `http://127.0.0.1:18000`입니다.
 
 ## 필수 설정
 

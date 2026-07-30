@@ -32,15 +32,30 @@ jobs:
       - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: forest-back-demo/package-lock.json
 
       - name: 의존성 설치
         run: npm ci
 
-      - name: 검사
+      - name: 테스트
         run: npm test
+
+      - name: 빌드
+        run: npm run build
+
+      - name: 배포 설정 확인
+        shell: bash
+        run: |
+          test -n "$RAILWAY_TOKEN" || {
+            echo "::error::RAILWAY_TOKEN 저장소 시크릿이 필요합니다."
+            exit 1
+          }
+          test -n "${{ secrets.RAILWAY_BACK_SERVICE }}" || {
+            echo "::error::RAILWAY_BACK_SERVICE 저장소 시크릿이 필요합니다."
+            exit 1
+          }
 
       - name: Railway 배포
         run: npx @railway/cli@5.30.1 up --service "${{ secrets.RAILWAY_BACK_SERVICE }}" --environment production --ci --path-as-root

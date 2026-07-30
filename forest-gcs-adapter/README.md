@@ -22,7 +22,7 @@ npm.cmd run dev
 ```dotenv
 MAVLINK_ENABLED=true
 SIMULATION_ENABLED=false
-MAVLINK_HOST=0.0.0.0
+MAVLINK_HOST=127.0.0.1
 MAVLINK_PORT=14550
 ```
 
@@ -33,7 +33,7 @@ QGroundControl 또는 MAVLink Router가 이 컴퓨터의 UDP `14550`으로 텔�
 백엔드 사건 UUID와 필요 시 인증 토큰을 설정한다.
 
 ```dotenv
-FOREST_API_URL=http://127.0.0.1:8000
+FOREST_API_URL=http://127.0.0.1:18000
 FOREST_EVENT_ID=00000000-0000-4000-8000-000000000000
 FOREST_API_TOKEN=
 ```

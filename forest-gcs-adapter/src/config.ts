@@ -10,14 +10,14 @@ function booleanValue(name: string, fallback: boolean) {
 }
 
 export const config = {
-  host: process.env.HOST?.trim() || "0.0.0.0",
+  host: process.env.HOST?.trim() || "127.0.0.1",
   port: numberValue("PORT", 18890),
-  mavlinkHost: process.env.MAVLINK_HOST?.trim() || "0.0.0.0",
+  mavlinkHost: process.env.MAVLINK_HOST?.trim() || "127.0.0.1",
   mavlinkPort: numberValue("MAVLINK_PORT", 14550),
   mavlinkEnabled: booleanValue("MAVLINK_ENABLED", false),
   simulationEnabled: booleanValue("SIMULATION_ENABLED", true),
   simulationIntervalMs: numberValue("SIMULATION_INTERVAL_MS", 1000),
-  forestApiUrl: (process.env.FOREST_API_URL?.trim() || "http://127.0.0.1:8000").replace(/\/$/, ""),
+  forestApiUrl: (process.env.FOREST_API_URL?.trim() || "http://127.0.0.1:18000").replace(/\/$/, ""),
   forestWebUrl: (process.env.FOREST_WEB_URL?.trim() || "http://127.0.0.1:15173").replace(/\/$/, ""),
   forestSimulatorUrl: (process.env.FOREST_SIMULATOR_URL?.trim() || "http://127.0.0.1:18787").replace(/\/$/, ""),
   forestApiToken: process.env.FOREST_API_TOKEN?.trim() || "",

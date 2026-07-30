@@ -9,14 +9,15 @@ on:
   pull_request:
     paths:
       - "forest-gcs-adapter/**"
+      - ".github/workflows/verify-gcs-adapter.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  verify:
-    name: 현장 배포 전 검증
+  package:
+    name: 현장 실행 패키지 생성
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -28,7 +29,7 @@ jobs:
       - name: Node.js 설정
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: forest-gcs-adapter/package-lock.json
 
@@ -40,3 +41,19 @@ jobs:
 
       - name: 테스트
         run: npm test
+
+      - name: 빌드
+        run: npm run build
+
+      - name: 현장 실행 패키지 업로드
+        uses: actions/upload-artifact@v4
+        with:
+          name: forest-gcs-adapter-${{ github.sha }}
+          path: |
+            forest-gcs-adapter/dist
+            forest-gcs-adapter/package.json
+            forest-gcs-adapter/package-lock.json
+            forest-gcs-adapter/instance.env.example
+            forest-gcs-adapter/scripts
+          if-no-files-found: error
+          retention-days: 14
