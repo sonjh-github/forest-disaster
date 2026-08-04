@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { ApiRecord, EventOverview } from "../../http-api";
 import type { LiveLocation, ResourceGroup } from "./UnifiedDisasterDashboard";
 
-export type PanelTab = "layers" | "alerts" | "networks" | "reports" | "integrations";
+export type PanelTab = "layers" | "alerts" | "networks" | "reports" | "kpis" | "integrations";
 
 interface OperationsPanelProps {
   overview: EventOverview;
@@ -21,7 +21,7 @@ const resourceGroups: Array<{ id: ResourceGroup; label: string; description: str
   { id: "PERSONNEL", label: "인원", description: "현장대원·구조인력" },
   { id: "UAV", label: "무인기", description: "정찰·주 중계·서비스 중계 드론" },
   { id: "COMMAND", label: "지휘 장비", description: "지휘차량·드론 지상통제장치" },
-  { id: "POSITIONING", label: "위치 장비", description: "RTK 단말·기준국·LPWA" },
+  { id: "POSITIONING", label: "대원 위치·통신", description: "GNSS/RTK 측위 · LPWA 기본망 · LTE 보조망" },
   { id: "COMMUNICATION", label: "통신 장비", description: "TVWS·LTE·5G·위성·무전·중계기·AP" },
   { id: "DETECTION", label: "탐지 장비", description: "RSSI·IR-UWB·GPR" },
   { id: "OTHER", label: "기타 장비", description: "분류되지 않은 현장 자산" },
@@ -42,6 +42,7 @@ const tabs: Array<{ id: PanelTab; label: string; icon: string }> = [
   { id: "alerts", label: "현장 경보", icon: "!" },
   { id: "networks", label: "통신망", icon: "⌁" },
   { id: "reports", label: "상황 보고", icon: "≡" },
+  { id: "kpis", label: "실증 KPI", icon: "✓" },
   { id: "integrations", label: "연계 상태", icon: "↔" },
 ];
 
@@ -116,7 +117,7 @@ export function OperationsPanel({ overview, visibleLayerIds, onLayerToggle, visi
       { id: "vehicle-detections", label: "차량 탐지", description: "현장 차량 인식 결과" },
       { id: "road-segmentations", label: "도로 분할", description: "진입 가능 도로 분석" },
     ];
-  const allLayerIds = ["resources", "event", ...domainLayers.map((layer) => layer.id)];
+  const allLayerIds = ["resources", "topology", "event", ...domainLayers.map((layer) => layer.id)];
   const layerRows = (id: string) => id === "resources" ? [...overview.assets, ...overview.personnel]
     : id === "event" ? [overview.event as unknown as ApiRecord]
     : overview.domainLayers[id] ?? [];
@@ -154,6 +155,9 @@ export function OperationsPanel({ overview, visibleLayerIds, onLayerToggle, visi
               <header><strong id="resource-layer-title">현장 자산</strong></header>
               <button type="button" className={`layer-parent-toggle${visibleLayerIds.has("resources") ? " enabled" : ""}`} onClick={() => onLayerToggle("resources")} aria-pressed={visibleLayerIds.has("resources")}>
                 <span>자산 위치 전체 표시</span><i />
+              </button>
+              <button type="button" className={`layer-parent-toggle${visibleLayerIds.has("topology") ? " enabled" : ""}`} onClick={() => onLayerToggle("topology")} aria-pressed={visibleLayerIds.has("topology")}>
+                <span>통신 토폴로지 연결선</span><i />
               </button>
               <div className="layer-child-options">
                 {resourceGroups.map((group) => {
@@ -239,12 +243,21 @@ export function OperationsPanel({ overview, visibleLayerIds, onLayerToggle, visi
             </article>)}
             <p className="operation-readonly-note">미디어 원본은 권한이 확인된 경우에만 별도 화면에서 재생·다운로드합니다.</p>
           </section>}
+          {activeTab === "kpis" && <section className="operations-records" aria-label="실증 KPI">
+            {overview.kpis.length === 0 && <p className="operation-empty-state"><b>수집된 실증 KPI 없음</b><span>모사값은 공식 실증값으로 표시하지 않습니다.</span></p>}
+            {overview.kpis.map((kpi) => <article key={value(kpi, ["kpiMeasurementId", "metricCode"])} data-status={kpi.passed === true ? "ACTIVE" : kpi.passed === false ? "FAILED" : "INACTIVE"}>
+              <div><strong>{value(kpi, ["metricName", "metricCode"], "실증 지표")}</strong><span>{kpi.passed === true ? "충족" : kpi.passed === false ? "미충족" : "판정 전"}</span></div>
+              <p>{value(kpi, ["measuredValue"])} {value(kpi, ["unit"], "")} · 목표 {value(kpi, ["targetOperator"], "-")} {value(kpi, ["targetValue"], "-")}</p>
+              <small>{occurredAt(kpi, ["measuredTo", "createdAt"])} · {value(kpi, ["sourceSystem"], "출처 미상")} · 원시 증적 {Array.isArray(kpi.evidence) ? kpi.evidence.length : 0}건</small>
+            </article>)}
+            <p className="operation-readonly-note">공식 판정은 실장비 원시로그와 시험실행 ID가 연결된 측정값만 사용합니다.</p>
+          </section>}
           {activeTab === "integrations" && <section className="operations-records" aria-label="외부 연계 상태">
             {overview.integrations.length === 0 && <p className="operation-empty-state"><b>등록된 연계 기능 없음</b><span>처리건 0이 아닌 연계 미등록 상태입니다.</span></p>}
             {overview.integrations.map((integration) => <article key={integration.id} data-status={integration.configured ? "ACTIVE" : "INACTIVE"}>
               <div><strong>{integration.id.replaceAll("-", " ")}</strong><span>{integration.configured ? "사용 가능" : "설정 필요"}</span></div>
               <p>{integration.domain === "common" ? "공통" : integration.domain === "wildfire" ? "산불" : "산사태"} · {integration.kind === "communication" ? "통신" : "AI"} · {integration.direction === "INBOUND" ? "수신" : integration.direction === "OUTBOUND" ? "송신" : "양방향"}</p>
-              <small>{integration.description}</small>
+              <small>{integration.description} · 담당 {integration.owner ?? "미지정"} · {integration.boundary === "TOBE" ? "투비유니콘 구현범위" : "외부기관 API 필요"} · {integration.evidenceStatus === "IMPLEMENTED" ? "구현" : integration.evidenceStatus === "MOCK" ? "모사" : "계약만 정의"}</small>
             </article>)}
             <p className="operation-readonly-note">송수신 대사·오류 원인·재처리는 운영자 권한과 감사로그 API가 연결된 경우에만 제공합니다.</p>
           </section>}
