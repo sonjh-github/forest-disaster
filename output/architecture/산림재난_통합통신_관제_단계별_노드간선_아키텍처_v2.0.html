@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>산림재난 통합통신·관제 단계별 노드-간선 아키텍처 v2.0</title>
+<style>
+    @page { size: A3 landscape; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #e9edf3; color: #172033; font-family: "Malgun Gothic", "Noto Sans KR", sans-serif; }
+  .sheet { width: 420mm; height: 297mm; margin: 0 auto 10mm; background: #fff; overflow: hidden; page-break-after: always; }
+  .sheet:last-child { page-break-after: auto; }
+  svg { display: block; width: 100%; height: 100%; }
+  .title { fill: #17375e; font-size: 33px; font-weight: 700; }
+  .subtitle { fill: #53657a; font-size: 15px; }
+  .stage { fill: #eaf0f8; stroke: #94a3b8; stroke-width: 1.5; rx: 8; }
+  .stage-num { fill: #295b96; font-size: 16px; font-weight: 700; text-anchor: middle; }
+  .stage-name { fill: #243b55; font-size: 17px; font-weight: 700; text-anchor: middle; }
+  .lane-wf { fill: #f7fbff; stroke: #4d7fb8; stroke-width: 2; rx: 15; }
+  .lane-ls { fill: #f8fbf8; stroke: #538268; stroke-width: 2; rx: 15; }
+  .lane-common { fill: #faf8ff; stroke: #7762a8; stroke-width: 2; rx: 15; }
+  .lane-title { fill: #17375e; font-size: 21px; font-weight: 700; }
+  .lane-note { fill: #637387; font-size: 13px; }
+  .box { width: 100%; height: 100%; border: 2px solid #3e6f9f; border-radius: 10px; background: #fff; padding: 9px 11px; overflow: hidden; }
+  .box.ls { border-color: #4b7e62; }
+  .box.shared { border-color: #66549a; background: #fbfaff; }
+  .box.contract { border-color: #9a672c; background: #fffaf3; }
+  .box.design { border-color: #6b5aa5; border-style: dashed; background: #fbf9ff; }
+  .box.offline { border-color: #7c8796; border-style: dotted; background: #fafafa; }
+  .box h3 { margin: 0 0 4px; color: #183b61; font-size: 15px; line-height: 1.22; }
+  .box.ls h3 { color: #315f49; }
+  .box.contract h3 { color: #764812; }
+  .box.shared h3, .box.design h3 { color: #514280; }
+  .box p { margin: 2px 0; color: #35475a; font-size: 11.5px; line-height: 1.28; }
+  .box .owner { color: #1f5f93; font-weight: 700; }
+  .box.ls .owner { color: #397356; }
+  .box .ref { margin-top: 5px; padding-top: 4px; border-top: 1px solid #d8e0e9; color: #68798c; font-size: 10.5px; }
+  .edge { fill: none; stroke: #60758d; stroke-width: 2.4; marker-end: url(#arrow); }
+  .edge-bi { fill: none; stroke: #60758d; stroke-width: 2.4; marker-start: url(#arrowStart); marker-end: url(#arrow); }
+  .edge-data { fill: none; stroke: #765d9f; stroke-width: 2.4; marker-end: url(#arrowPurple); }
+  .edge-offline { fill: none; stroke: #8b96a4; stroke-width: 2; stroke-dasharray: 8 6; marker-end: url(#arrowMuted); }
+  .edge-design { fill: none; stroke: #9a672c; stroke-width: 2.1; stroke-dasharray: 7 5; marker-end: url(#arrowBrown); }
+  .edge-label rect { fill: #fff; stroke: #c7d0da; rx: 6; }
+  .edge-label text { fill: #37495d; font-size: 10.5px; text-anchor: middle; }
+  .legend text { fill: #495b70; font-size: 12px; }
+  .small-flow { fill: #fff; stroke: #7564a3; stroke-width: 1.7; rx: 8; }
+  .small-flow-text { fill: #3e355d; font-size: 12px; font-weight: 700; text-anchor: middle; }
+  .footer { fill: #6a7888; font-size: 11px; }
+
+  .trace-page { padding: 12mm 13mm 8mm; }
+  .trace-page h1 { margin: 0; color: #17375e; font-size: 28px; }
+  .trace-page .lead { margin: 4px 0 10px; color: #596a7d; font-size: 12px; }
+  .trace-grid { display: grid; grid-template-columns: 1.12fr .88fr; gap: 10px; margin-bottom: 9px; }
+  .trace-card { border: 1.5px solid #9bacbf; border-radius: 8px; padding: 8px 10px; background: #f8fafc; min-height: 68px; }
+  .trace-card h2 { margin: 0 0 4px; color: #294e78; font-size: 14px; }
+  .trace-card p { margin: 2px 0; color: #405268; font-size: 10.5px; line-height: 1.35; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .edge-table { font-size: 9.3px; }
+  .edge-table th { padding: 5px 4px; border: 1px solid #7f8fa1; background: #dfe8f2; color: #223c59; text-align: center; }
+  .edge-table td { padding: 4px 5px; border: 1px solid #aab5c1; vertical-align: middle; line-height: 1.23; }
+  .edge-table tr:nth-child(even) td { background: #fafbfd; }
+  .edge-table .num { text-align: center; font-weight: 700; color: #214f82; }
+  .edge-table .status { font-weight: 700; text-align: center; }
+  .confirmed { color: #245b3a; }
+  .contracted { color: #7b4c17; }
+  .designed { color: #5b478e; }
+  .bottom-grid { display: grid; grid-template-columns: 1.08fr .92fr; gap: 10px; margin-top: 9px; }
+  .role-table { font-size: 9px; }
+  .role-table th { background: #e8edf3; color: #31485f; border: 1px solid #9eabb8; padding: 4px; }
+  .role-table td { border: 1px solid #b4bec8; padding: 4px 5px; line-height: 1.25; }
+  .caution { border: 1.5px solid #b07838; border-radius: 8px; background: #fffaf3; padding: 8px 10px; }
+  .caution h2 { margin: 0 0 5px; color: #774711; font-size: 14px; }
+  .caution ul { margin: 0; padding-left: 18px; }
+  .caution li { margin: 3px 0; color: #4d4337; font-size: 9.7px; line-height: 1.3; }
+  .sequence-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 9px; }
+  .sequence-card { border: 1.5px solid #8da0b4; border-radius: 8px; padding: 8px 10px; background: #fbfcfe; min-height: 156px; }
+  .sequence-card.wf { border-color: #4d7fb8; background: #f7fbff; }
+  .sequence-card.ls { border-color: #538268; background: #f8fbf8; }
+  .sequence-card.ops { border-color: #7762a8; background: #faf8ff; }
+  .sequence-card h2 { margin: 0 0 6px; color: #24496f; font-size: 13px; }
+  .sequence-card.ls h2 { color: #315f49; }
+  .sequence-card.ops h2 { color: #514280; }
+  .sequence-card ol { margin: 0; padding-left: 20px; }
+  .sequence-card li { position: relative; margin: 0; padding: 2px 0 6px 3px; color: #3e4d60; font-size: 9.6px; line-height: 1.28; }
+  .sequence-card li:not(:last-child)::after { content: "↓"; position: absolute; left: -15px; bottom: -4px; color: #73859a; font-weight: 700; }
+  .gate-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+  .gate { border: 1px solid #a9b4c0; background: #f4f7fa; padding: 6px 8px; min-height: 47px; }
+  .gate strong { display: block; color: #2b4968; font-size: 9.8px; margin-bottom: 2px; }
+  .gate span { display: block; color: #59697b; font-size: 8.8px; line-height: 1.2; }
+  .docline { margin-top: 7px; color: #657487; font-size: 8.7px; line-height: 1.25; }
+  @media print { html, body { background: #fff; } .sheet { margin: 0; } }
+</style>
+</head>
+<body>
+
+<section class="sheet">
+<svg viewBox="0 0 2384 1684" role="img" aria-labelledby="archTitle archDesc">
+  <title id="archTitle">산림재난 통합통신·관제 단계별 노드-간선 아키텍처</title>
+  <desc id="archDesc">산불과 산사태 현장 단말에서 현장망, 게이트웨이, 백홀, 클라우드 API, 데이터와 AI, 통합관제까지 이어지는 문서 근거 기반 단계별 구조</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#60758d"/></marker>
+    <marker id="arrowStart" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M10 0 L0 5 L10 10 z" fill="#60758d"/></marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#765d9f"/></marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8b96a4"/></marker>
+    <marker id="arrowBrown" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#9a672c"/></marker>
+  </defs>
+
+  <text x="45" y="48" class="title">산림재난 통합통신·관제 단계별 노드-간선 아키텍처</text>
+  <text x="45" y="76" class="subtitle">원문 기준: 연구개발계획서·2025 연차보고서·회사별 과업지시서·계약 별첨 명세 | 작성기준 2026.08.03 | v2.0</text>
+  <text x="2335" y="48" text-anchor="end" class="subtitle" style="font-weight:700;fill:#294e78">제출용 · A3 가로 · 1/2</text>
+
+  <!-- Stage headers -->
+  <g>
+    <rect x="55" y="98" width="282" height="62" class="stage"/><text x="196" y="119" class="stage-num">01</text><text x="196" y="145" class="stage-name">현장 단말·센서</text>
+    <rect x="367" y="98" width="282" height="62" class="stage"/><text x="508" y="119" class="stage-num">02</text><text x="508" y="145" class="stage-name">현장 접속망</text>
+    <rect x="679" y="98" width="302" height="62" class="stage"/><text x="830" y="119" class="stage-num">03</text><text x="830" y="145" class="stage-name">수집·게이트웨이</text>
+    <rect x="1011" y="98" width="302" height="62" class="stage"/><text x="1162" y="119" class="stage-num">04</text><text x="1162" y="145" class="stage-name">백홀·지휘 거점</text>
+    <rect x="1343" y="98" width="302" height="62" class="stage"/><text x="1494" y="119" class="stage-num">05</text><text x="1494" y="145" class="stage-name">통합 연계 경계</text>
+    <rect x="1675" y="98" width="302" height="62" class="stage"/><text x="1826" y="119" class="stage-num">06</text><text x="1826" y="145" class="stage-name">클라우드·데이터·AI</text>
+    <rect x="2007" y="98" width="322" height="62" class="stage"/><text x="2168" y="119" class="stage-num">07</text><text x="2168" y="145" class="stage-name">관제·검증·지휘</text>
+  </g>
+
+  <!-- Wildfire lane -->
+  <rect x="35" y="178" width="2314" height="550" class="lane-wf"/>
+  <text x="55" y="209" class="lane-title">산불 대응 통신망</text>
+  <text x="2255" y="209" text-anchor="end" class="lane-note">RTK 위치 · 양방향 무전 · TVWS/이음5G/LEO 다중 백홀 · 산불관제 통합 API · VR 결과 연계</text>
+
+  <foreignObject x="55" y="232" width="282" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>RTK-GNSS 대원 단말(로버)</h3><p>위치·고도·배터리·비상정보</p><p><span class="owner">진인프라</span> · 소형·경량·저전력</p><div class="ref">[WF-P p.5, 21-22] [WF-A p.55]</div></div></foreignObject>
+  <foreignObject x="55" y="382" width="282" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>LTE/400MHz 디지털무전기</h3><p>그룹·개별·긴급통화, 지휘 음성</p><p><span class="owner">에스플러스텍</span></p><div class="ref">[WF-P p.30-35] [WF-A p.31-34]</div></div></foreignObject>
+  <foreignObject x="55" y="532" width="282" height="140"><div xmlns="http://www.w3.org/1999/xhtml" class="box contract"><h3>현장 영상·드론·휴대형 장비</h3><p>TVWS 백팩/Wi-Fi AP·드론 중계</p><p>산불 대응 GCS 공급: <span class="owner">새암정보기술</span></p><div class="ref">[WF-P p.5, 34-35, 42] [GCS-C]</div></div></foreignObject>
+
+  <foreignObject x="367" y="232" width="282" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>LPWA 현장망</h3><p>단말 위치·비상정보 상향</p><p>RTCM 보정신호 비콘 멀티캐스트 하향</p><div class="ref">LoRa 920.9-923MHz [WF-P p.21-22]</div></div></foreignObject>
+  <foreignObject x="367" y="382" width="282" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>400MHz 음성망</h3><p>대원 무전기 ↔ 디지털무전 Gateway</p><p>음영 시 독립 그룹·긴급 통신</p><div class="ref">[WF-P p.31-34] [WF-A p.28, 32]</div></div></foreignObject>
+  <foreignObject x="367" y="532" width="282" height="140"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>TVWS CPE·Wi-Fi / 이음5G</h3><p>CPE-Base 장거리 RF, 현장 IP 접속</p><p>드론·배낭·차량별 접속 채널</p><div class="ref">[WF-P p.34-35, 40, 42]</div></div></foreignObject>
+
+  <foreignObject x="679" y="232" width="302" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>RTK 기준정보·LPWA Gateway</h3><p>NTRIP → RTCM 경량변환·망 제어기</p><p><span class="owner">진인프라</span> · RF Gateway/Controller</p><div class="ref">[WF-P p.5, 21-22, 39-40]</div></div></foreignObject>
+  <foreignObject x="679" y="382" width="302" height="118"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>400MHz 무전 Gateway</h3><p>지휘소 음성 ↔ 무전기 오디오 중계</p><p>TVWS 모듈 Analog Audio 연동</p><div class="ref">[WF-P p.32] [WF-A p.32, 58]</div></div></foreignObject>
+  <foreignObject x="679" y="532" width="302" height="140"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>TVWS Base·Relay / 이동기지국 NMS</h3><p>Base-CPE-Relay·LTE 연결·상태관리</p><p><span class="owner">진인프라</span> / <span class="owner">앤디피에스</span></p><div class="ref">[WF-P p.39-41] [WF-A p.9, 28, 58]</div></div></foreignObject>
+
+  <foreignObject x="1011" y="290" width="302" height="168"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>이동형 현장지휘차량·통신 허브</h3><p>현장망 집선·지휘·전원·모니터링 SW</p><p>LPWA·TVWS·무전·Wi-Fi 통합</p><p><span class="owner">앤디피에스</span> · 이동기지국/재난통신</p><div class="ref">[WF-P p.6, 30, 41-44] [WF-A p.28]</div></div></foreignObject>
+  <foreignObject x="1011" y="518" width="302" height="154"><div xmlns="http://www.w3.org/1999/xhtml" class="box"><h3>다중 외부 백홀</h3><p>LTE/이음5G · TVWS · LEO 위성</p><p>AI-RAN 본딩·스위칭·서비스 연속성</p><p><span class="owner">ETRI</span></p><div class="ref">[WF-P p.5-6, 12, 15, 38-39, 42]</div></div></foreignObject>
+
+  <foreignObject x="1343" y="300" width="302" height="190"><div xmlns="http://www.w3.org/1999/xhtml" class="box design"><h3>투비유니콘 Northbound 연계 경계</h3><p>Gateway·NMS·GCS 단위 상위연계</p><p>자산 UUID·사건·시각·위치·상태 정규화</p><p>HTTPS/JSON은 통합 설계안이며 실제 장비 API는 협의</p><div class="ref">[WF-P p.6, 12, 22, 37] [ICD v0.9]</div></div></foreignObject>
+  <foreignObject x="1343" y="530" width="302" height="142"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>통합 API·이벤트 수집</h3><p>인증·검증·중복방지·재시도·감사로그</p><p>장비 직접 DB 접속 금지</p><div class="ref">투비유니콘 시스템 설계</div></div></foreignObject>
+
+  <foreignObject x="1675" y="250" width="302" height="146"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>운영 Cloud + PostgreSQL/PostGIS</h3><p>KT Cloud 실장 목표·API/DB 분리</p><p>자산·위치·통신품질·경보·이력</p><div class="ref">계획: 표준 API/데이터 연계 [WF-P p.6, 12]</div></div></foreignObject>
+  <foreignObject x="1675" y="440" width="302" height="146"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>통신음영·산불확산 AI</h3><p>RTK·망 품질·지형·화선 입력</p><p>음영 예측·기지국 배치 추천·결과 저장</p><div class="ref">[WF-P p.5, 15, 37]</div></div></foreignObject>
+  <foreignObject x="1675" y="606" width="302" height="90"><div xmlns="http://www.w3.org/1999/xhtml" class="box contract"><h3>리모샷 VR 검증</h3><p>AI 음영결과 검증 → 결과·로그 반환</p><div class="ref">[VR-SOW SFR-001~003]</div></div></foreignObject>
+
+  <foreignObject x="2007" y="292" width="322" height="200"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>산불관제 통합 UI/UX·중앙 상황실</h3><p>산불·음영·대원·장비·대피소·통제구역</p><p>무전망은 상태·위치·장애를 표출</p><p>지휘 음성 자체는 별도 무전/상황실 콘솔 경로</p><div class="ref">[WF-P p.30, 37, 44] [WF-A p.28]</div></div></foreignObject>
+  <foreignObject x="2007" y="540" width="322" height="132"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>VR 검증결과·시나리오·감사로그</h3><p>검증 상태·입력버전·결론·보고서 표출</p><p>실시간 HMD 영상 내장은 요구 아님</p><div class="ref">[VR-SOW SFR-001~003]</div></div></foreignObject>
+
+  <!-- Wildfire edges -->
+  <path d="M337 291 L367 291" class="edge-bi"/><g class="edge-label"><rect x="335" y="266" width="36" height="18"/><text x="353" y="279">LPWA</text></g>
+  <path d="M649 291 L679 291" class="edge-bi"/>
+  <path d="M337 441 L367 441" class="edge-bi"/><g class="edge-label"><rect x="330" y="416" width="44" height="18"/><text x="352" y="429">400MHz</text></g>
+  <path d="M649 441 L679 441" class="edge-bi"/>
+  <path d="M337 602 L367 602" class="edge-bi"/>
+  <path d="M649 602 L679 602" class="edge-bi"/><g class="edge-label"><rect x="646" y="577" width="40" height="18"/><text x="666" y="590">TVWS</text></g>
+  <path d="M981 291 C1000 291 1000 345 1011 345" class="edge"/>
+  <path d="M981 441 L1011 400" class="edge-bi"/>
+  <path d="M981 602 C1000 602 995 430 1011 430" class="edge-bi"/>
+  <path d="M1313 374 L1343 374" class="edge-bi"/>
+  <path d="M1313 595 L1343 595" class="edge"/><g class="edge-label"><rect x="1308" y="570" width="42" height="18"/><text x="1329" y="583">IP 백홀</text></g>
+  <path d="M1494 490 L1494 530" class="edge"/>
+  <path d="M1645 601 C1660 601 1660 323 1675 323" class="edge"/>
+  <path d="M1977 323 L2007 370" class="edge"/>
+  <path d="M1826 396 L1826 440" class="edge"/>
+  <path d="M1826 586 L1826 606" class="edge-data"/>
+  <path d="M1977 651 L2007 606" class="edge-data"/>
+  <path d="M2007 420 C1978 420 1985 515 1977 515" class="edge-data"/>
+
+  <!-- Landslide lane -->
+  <rect x="35" y="748" width="2314" height="575" class="lane-ls"/>
+  <text x="55" y="780" class="lane-title">산사태 대응 통신망·조난자 탐색</text>
+  <text x="2255" y="780" text-anchor="end" class="lane-note">드론 중계 LTE · EOIR/5G 품질 · CUSTOM GCS/DMS · Wi-Fi/IR-UWB/GPR 탐지 · 클라우드형 통합관제</text>
+
+  <foreignObject x="55" y="805" width="282" height="112"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>사고수습대원 통신기기</h3><p>GPS 위치·활동·현장 통신</p><p>드론 중계기를 통한 LTE 연계</p><div class="ref">[LS-P p.7, 9-10, 20]</div></div></foreignObject>
+  <foreignObject x="55" y="945" width="282" height="112"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>매몰 예상자 스마트폰</h3><p>Wi-Fi 신호·재난문자/시스템앱 활성화</p><p>정부·통신사·제조사 협력이 전제</p><div class="ref">[LS-P p.7, 19] [LS-A p.21-22]</div></div></foreignObject>
+  <foreignObject x="55" y="1085" width="282" height="154"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>드론·EOIR·탐지 센서</h3><p>EOIR MICRO-300 2식·5G모뎀 2식</p><p>Rover_AP·IR-UWB/GPR 탑재 가능</p><p><span class="owner">천풍/셀코/진인프라 공급·KT 협력</span></p><div class="ref">[LS-P p.8-10] [LS-C1 p.8] [LS-A p.21-25]</div></div></foreignObject>
+
+  <foreignObject x="367" y="805" width="282" height="112"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>LTE/5G 현장 접속망</h3><p>대원 위치·드론 영상·상태 전송</p><p>드론 중계·지상기지국 활용</p><div class="ref">[LS-P p.7, 9-10, 20]</div></div></foreignObject>
+  <foreignObject x="367" y="945" width="282" height="112"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>Wi-Fi/RSSI 탐지망</h3><p>Ref_AP 삼변측량·Rover_AP Grid Scan</p><p>RSSI·위상·진폭·RTT 관측</p><div class="ref">[LS-A p.21, 24, 36]</div></div></foreignObject>
+  <foreignObject x="367" y="1085" width="282" height="154"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>드론 비행·영상 링크</h3><p>기체 ↔ GCS 제조사 연계 구간</p><p>EOIR 영상·기체 상태·임무 정보</p><p>상세 프로토콜은 장비사 명세 확인</p><div class="ref">[LS-C1/2] [LS-A p.25, 36]</div></div></foreignObject>
+
+  <foreignObject x="679" y="805" width="302" height="132"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>메인·서비스·설치형 중계기</h3><p>유선전원 메인 드론·TVWS 서비스 드론</p><p>기상악화 시 설치형 임시 중계기</p><div class="ref">[LS-P p.7, 9-10, 20]</div></div></foreignObject>
+  <foreignObject x="679" y="958" width="302" height="122"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>Ref_AP / Rover_AP / GPR</h3><p>Ref 3곳(XY)·4곳(XYZ), 드론 Grid Scan</p><p>Wi-Fi 위치추정·IR-UWB 생체신호</p><div class="ref">[LS-A p.21-24]</div></div></foreignObject>
+  <foreignObject x="679" y="1102" width="302" height="137"><div xmlns="http://www.w3.org/1999/xhtml" class="box contract"><h3>CUSTOM GCS·DMS·통합알림</h3><p>드론·통신단말 일체관제, 모니터링</p><p><span class="owner">진인프라 계약 구축</span></p><div class="ref">[LS-C2 p.8] [LS-A p.36]</div></div></foreignObject>
+
+  <foreignObject x="1011" y="824" width="302" height="154"><div xmlns="http://www.w3.org/1999/xhtml" class="box contract"><h3>KT 5G 기지국·Supervisor</h3><p>망 품질관리·파라미터 조정·틸팅</p><p>5G 모뎀 관제·유지보수</p><p><span class="owner">KT / 진인프라 연계</span></p><div class="ref">[LS-C1/2 p.8]</div></div></foreignObject>
+  <foreignObject x="1011" y="1010" width="302" height="154"><div xmlns="http://www.w3.org/1999/xhtml" class="box ls"><h3>긴급통신복구차량·지상기지국</h3><p>현장 중계망 집선·외부 IP 백홀</p><p>재난안전통신망·국민재난안전포털 연계</p><p>민간클라우드/온프레미스 교차 운용</p><div class="ref">[LS-P p.7, 20, 55]</div></div></foreignObject>
+
+  <foreignObject x="1343" y="865" width="302" height="188"><div xmlns="http://www.w3.org/1999/xhtml" class="box design"><h3>GCS·KT·탐지 Northbound 어댑터</h3><p>GCS/DMS·Supervisor·AP·EOIR 결과 수집</p><p>자산 UUID·사건·시각·좌표·품질 정규화</p><p>장비별 Push/Poll/API 방식은 공급사와 확정</p><div class="ref">[LS-P p.20] [LS-C1/2] [ICD v0.9]</div></div></foreignObject>
+  <foreignObject x="1343" y="1090" width="302" height="132"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>Cloud Ingress·통합 API</h3><p>영상/상태/위치/품질/경보 수신</p><p>인증·재시도·장애·감사로그</p><div class="ref">[LS-P p.9, 20]</div></div></foreignObject>
+
+  <foreignObject x="1675" y="805" width="302" height="152"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>Cloud Container + 데이터 저장</h3><p>PostgreSQL/PostGIS·영상·원시/가공 데이터</p><p>운영 실장 목표: KT Cloud</p><div class="ref">[LS-P p.7, 9, 20, 55]</div></div></foreignObject>
+  <foreignObject x="1675" y="980" width="302" height="128"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>AI 분석·위치융합·3D 데이터</h3><p>변화탐지·RSSI 위치·Viewshed·위험도</p><p>CSV → DXF → CAD는 배치 산출물</p><div class="ref">[LS-A p.24-25] [3D-SOW]</div></div></foreignObject>
+  <foreignObject x="1675" y="1130" width="302" height="110"><div xmlns="http://www.w3.org/1999/xhtml" class="box offline"><h3>미디어울산 데이터셋</h3><p>인터뷰·현장사진·GPS·환경 JSON/CSV</p><p>실시간 장비망이 아닌 보안 배치 적재</p><div class="ref">[DATA-SOW SFR-001~004]</div></div></foreignObject>
+
+  <foreignObject x="2007" y="850" width="322" height="210"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>클라우드형 산사태 통합관제</h3><p>드론·대원·중계망·5G 품질·조난 후보</p><p>GCS/DMS/Supervisor·통합알림 상태</p><p>지자체/현장 양방향 정보공유</p><p>재난안전통신망·포털 연계</p><div class="ref">[LS-P p.7, 10, 20] [LS-C1/2]</div></div></foreignObject>
+  <foreignObject x="2007" y="1090" width="322" height="150"><div xmlns="http://www.w3.org/1999/xhtml" class="box shared"><h3>3D 디지털트윈·결과 조회</h3><p>지형·중계기 최적배치·탐지위치·영상</p><p>DXF/CAD 결과와 분석보고서 연결</p><div class="ref">[LS-A p.25, 36] [3D-SOW]</div></div></foreignObject>
+
+  <!-- Landslide edges -->
+  <path d="M337 861 L367 861" class="edge-bi"/><g class="edge-label"><rect x="335" y="836" width="35" height="18"/><text x="352" y="849">LTE</text></g>
+  <path d="M649 861 L679 871" class="edge-bi"/>
+  <path d="M337 1001 L367 1001" class="edge-bi"/><g class="edge-label"><rect x="332" y="976" width="42" height="18"/><text x="353" y="989">Wi-Fi</text></g>
+  <path d="M649 1001 L679 1019" class="edge"/>
+  <path d="M337 1162 L367 1162" class="edge-bi"/>
+  <path d="M649 1162 L679 1170" class="edge-bi"/>
+  <path d="M981 871 L1011 901" class="edge-bi"/>
+  <path d="M981 1019 C995 1019 995 1080 1011 1080" class="edge"/>
+  <path d="M981 1170 C995 1170 995 950 1011 950" class="edge-bi"/>
+  <path d="M1313 901 L1343 930" class="edge-design"/><g class="edge-label"><rect x="1303" y="875" width="48" height="18"/><text x="1327" y="888">업체 API</text></g>
+  <path d="M1313 1087 L1343 1148" class="edge"/>
+  <path d="M1494 1053 L1494 1090" class="edge"/>
+  <path d="M1645 1156 C1660 1156 1660 881 1675 881" class="edge"/>
+  <path d="M1977 881 L2007 940" class="edge"/>
+  <path d="M1826 957 L1826 980" class="edge"/>
+  <path d="M1826 1108 L1826 1130" class="edge-offline"/>
+  <path d="M1977 1044 L2007 1165" class="edge-data"/>
+  <path d="M1977 1185 C1990 1185 1990 1165 2007 1165" class="edge-offline"/>
+
+  <!-- Common DevOps-like flow -->
+  <rect x="35" y="1344" width="2314" height="258" class="lane-common"/>
+  <text x="55" y="1377" class="lane-title">공통 운영 파이프라인 · DevOps형 관측·피드백 루프</text>
+  <text x="2255" y="1377" text-anchor="end" class="lane-note">실물 식별자는 자산 UUID로 통합하고, 장비별 원시 프로토콜은 Gateway/GCS/NMS 안에서 유지</text>
+  <g>
+    <rect x="70" y="1415" width="270" height="76" class="small-flow"/><text x="205" y="1447" class="small-flow-text">① 자산 사전등록</text><text x="205" y="1470" class="footer" text-anchor="middle">UUID · 자산번호 · 시리얼/IMEI</text>
+    <rect x="386" y="1415" width="270" height="76" class="small-flow"/><text x="521" y="1447" class="small-flow-text">② 장비/Gateway 인증</text><text x="521" y="1470" class="footer" text-anchor="middle">자격증명 · 보고권한 · 사건배정</text>
+    <rect x="702" y="1415" width="270" height="76" class="small-flow"/><text x="837" y="1447" class="small-flow-text">③ Northbound 수집</text><text x="837" y="1470" class="footer" text-anchor="middle">Gateway/GCS/NMS/Service</text>
+    <rect x="1018" y="1415" width="270" height="76" class="small-flow"/><text x="1153" y="1447" class="small-flow-text">④ 검증·정규화</text><text x="1153" y="1470" class="footer" text-anchor="middle">UUID · ISO 8601 · 좌표 · 품질</text>
+    <rect x="1334" y="1415" width="270" height="76" class="small-flow"/><text x="1469" y="1447" class="small-flow-text">⑤ 저장·이력화</text><text x="1469" y="1470" class="footer" text-anchor="middle">PostgreSQL/PostGIS · 미디어</text>
+    <rect x="1650" y="1415" width="270" height="76" class="small-flow"/><text x="1785" y="1447" class="small-flow-text">⑥ 관측·경보</text><text x="1785" y="1470" class="footer" text-anchor="middle">상태 · 지연 · 장애 · 1분 스냅샷</text>
+    <rect x="1966" y="1415" width="330" height="76" class="small-flow"/><text x="2131" y="1447" class="small-flow-text">⑦ 승인된 명령·피드백</text><text x="2131" y="1470" class="footer" text-anchor="middle">관제 → API → Gateway/GCS/NMS</text>
+    <path d="M340 1453 L386 1453 M656 1453 L702 1453 M972 1453 L1018 1453 M1288 1453 L1334 1453 M1604 1453 L1650 1453 M1920 1453 L1966 1453" class="edge"/>
+    <path d="M2131 1491 C2131 1560 837 1560 837 1491" class="edge-design"/>
+  </g>
+  <g class="legend" transform="translate(70,1538)">
+    <line x1="0" y1="0" x2="56" y2="0" class="edge"/><text x="68" y="5">문서상 단방향 데이터</text>
+    <line x1="240" y1="0" x2="296" y2="0" class="edge-bi"/><text x="308" y="5">문서상 양방향 통신</text>
+    <line x1="485" y1="0" x2="541" y2="0" class="edge-design"/><text x="553" y="5">업체 인터페이스 협의 필요</text>
+    <line x1="800" y1="0" x2="856" y2="0" class="edge-offline"/><text x="868" y="5">파일·배치 연계</text>
+    <rect x="1080" y="-10" width="20" height="20" fill="#fffaf3" stroke="#9a672c"/><text x="1110" y="5">계약 별첨 직접명시</text>
+    <rect x="1325" y="-10" width="20" height="20" fill="#fbf9ff" stroke="#6b5aa5" stroke-dasharray="5 3"/><text x="1355" y="5">투비유니콘 통합 설계</text>
+  </g>
+  <text x="55" y="1584" class="footer">주의: TVWS·이음5G는 현장/전용 접속망이며 외부 클라우드 연결에는 LTE·위성·기관망·VPN 등 IP 백홀이 필요하다. 개별 단말이 클라우드 DB에 직접 접속하지 않는다.</text>
+</svg>
+</section>
+
+<section class="sheet trace-page">
+  <h1>노드-간선 원바이원 검토표 및 책임 경계</h1>
+  <p class="lead">각 간선은 원문에 직접 명시된 기능, 계약 별첨의 납품 범위, 또는 투비유니콘 통합설계 중 하나로 구분했다. 제조사 원시 프로토콜이 없는 구간은 임의 확정하지 않았다. <strong>제출용 · A3 가로 · 2/2</strong></p>
+
+  <div class="trace-grid">
+    <div class="trace-card">
+      <h2>판정 기준</h2>
+      <p><strong>계획·연차 확인:</strong> 연구개발계획서 또는 연차보고서에 장비·망·데이터 흐름이 직접 명시됨.</p>
+      <p><strong>계약 확인:</strong> 과업지시서 또는 물품공급·용역 명세서에 품명·기능·연계 대상이 직접 명시됨.</p>
+      <p><strong>통합 설계:</strong> 표준 API 목표를 구현하기 위한 투비유니콘의 Northbound 계약. 장비사 수정안 수렴 후 확정.</p>
+    </div>
+    <div class="trace-card">
+      <h2>배치 원칙</h2>
+      <p>운영 목표는 KT Cloud의 Ingress/API와 PostgreSQL/PostGIS를 중심으로 구성하고, 대용량 영상은 객체저장소에 분리한다.</p>
+      <p>현재 Supabase 및 로컬 포트별 인스턴스는 개발·검증용이며 운영 아키텍처의 하위 대체환경이다.</p>
+    </div>
+  </div>
+
+  <table class="edge-table" aria-label="노드 간선 검토표">
+    <colgroup>
+      <col style="width:3%"><col style="width:15%"><col style="width:14%"><col style="width:16%"><col style="width:22%"><col style="width:16%"><col style="width:14%">
+    </colgroup>
+    <thead><tr><th>No.</th><th>출발 노드</th><th>연결망·인터페이스</th><th>도착 노드</th><th>전달 데이터·제어</th><th>원문 근거</th><th>판정</th></tr></thead>
+    <tbody>
+      <tr><td class="num">01</td><td>RTK 기준정보/NTRIP 또는 이동형 기준국</td><td>NTRIP → RTCM 경량변환</td><td>LPWA 망 제어기·RF Gateway</td><td>기준국 보정정보, RTCM 변환결과</td><td>WF-P p.5, 21-22, 39-40</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">02</td><td>LPWA Gateway</td><td>LPWA 비콘 멀티캐스트</td><td>대원 RTK-GNSS 단말</td><td>RTCM 보정신호·채널/슬롯</td><td>WF-P p.21-22</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">03</td><td>대원 RTK-GNSS 단말</td><td>LPWA, 필요 시 LTE</td><td>LPWA Gateway/Network Controller</td><td>위치·고도·배터리·비상정보</td><td>WF-P p.5, 21-22; WF-A p.55</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">04</td><td>LTE/400MHz 무전기</td><td>400MHz 음성</td><td>디지털무전 Gateway</td><td>그룹·개별·긴급통화, 지휘 음성</td><td>WF-P p.31-34; WF-A p.28, 32</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">05</td><td>디지털무전 Gateway</td><td>TVWS 오디오 연동</td><td>이동형 지휘소/TVWS Module</td><td>지휘소 수신 음성·현장 무전 오디오</td><td>WF-P p.32; WF-A p.32</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">06</td><td>TVWS CPE·백팩·Relay</td><td>TVWS RF / Wi-Fi AP</td><td>TVWS Base·이동기지국</td><td>현장 IP 트래픽, 영상·상태·음성</td><td>WF-P p.34-35, 40; WF-A p.58</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">07</td><td>이동형 현장지휘차량</td><td>LTE·이음5G·TVWS·LEO IP 백홀</td><td>외부망/운영 Cloud</td><td>현장 수집정보, 영상, 위치, 통신품질</td><td>WF-P p.5-6, 12, 15, 42</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">08</td><td>Gateway·NMS·GCS</td><td>Northbound API</td><td>투비유니콘 통합 API</td><td>UUID·사건·시각·위치·상태·품질</td><td>WF-P p.6, 12, 22, 37; ICD v0.9</td><td class="status designed">설계/협의</td></tr>
+      <tr><td class="num">09</td><td>통신음영 AI</td><td>JSON/CSV·시나리오 데이터</td><td>리모샷 VR 검증</td><td>음영 예측, 지형, 자원·시나리오</td><td>VR-SOW SFR-001~002</td><td class="status contracted">과업 확인</td></tr>
+      <tr><td class="num">10</td><td>리모샷 VR 검증</td><td>결과·로그·보고서</td><td>산불관제 UI/UX</td><td>검증상태·입력버전·결론·감사로그</td><td>VR-SOW SFR-001~003</td><td class="status contracted">과업 확인</td></tr>
+      <tr><td class="num">11</td><td>사고수습대원 통신기기</td><td>드론 중계 LTE</td><td>메인/서비스 중계 드론</td><td>GPS 위치·활동·현장통신</td><td>LS-P p.7, 9-10, 20</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">12</td><td>EOIR·5G 모뎀·드론</td><td>제조사 비행/영상 링크</td><td>CUSTOM GCS</td><td>기체·임무·EOIR 영상·상태</td><td>LS-C1/2 p.8; LS-A p.25, 36</td><td class="status contracted">계약 확인</td></tr>
+      <tr><td class="num">13</td><td>KT 5G 기지국·모뎀</td><td>KT 관리 인터페이스</td><td>KT Supervisor</td><td>망 품질·파라미터 조정·틸팅·장애</td><td>LS-C1 p.8; LS-C2 p.8</td><td class="status contracted">계약 확인</td></tr>
+      <tr><td class="num">14</td><td>CUSTOM GCS·DMS·Supervisor</td><td>Northbound Adapter</td><td>Cloud Ingress·통합 API</td><td>드론·단말·5G 품질·경보·유지보수</td><td>LS-P p.20; LS-C1/2 p.8</td><td class="status designed">방식 협의</td></tr>
+      <tr><td class="num">15</td><td>매몰자 스마트폰</td><td>Wi-Fi 신호</td><td>Ref_AP/Rover_AP</td><td>RSSI·위상·진폭·RTT·위치추정 입력</td><td>LS-A p.21, 24, 36</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">16</td><td>Rover_AP·IR-UWB/GPR</td><td>LTE/IP 또는 GCS 경유</td><td>Cloud 위치융합·AI</td><td>Grid 좌표·RSSI·생체/반사 신호·후보위치</td><td>LS-P p.19-20; LS-A p.21-24</td><td class="status designed">상위방식 협의</td></tr>
+      <tr><td class="num">17</td><td>드론 중계/긴급통신복구차량</td><td>5G/LTE·기관망 IP 백홀</td><td>Cloud Container</td><td>현장 위치·영상·중계망 상태·재해정보</td><td>LS-P p.7, 9, 20, 55</td><td class="status confirmed">계획 확인</td></tr>
+      <tr><td class="num">18</td><td>미디어울산 / 만듦</td><td>보안 파일·배치</td><td>데이터·AI/3D 결과 저장</td><td>JSON/CSV 데이터셋, CSV→DXF/CAD 산출물</td><td>DATA-SOW; 3D-SOW</td><td class="status contracted">과업 확인</td></tr>
+    </tbody>
+  </table>
+
+  <div class="bottom-grid">
+    <table class="role-table" aria-label="기관별 책임 노드">
+      <thead><tr><th>구분</th><th>기관·회사</th><th>문서상 책임 노드</th><th>통합관제 경계</th></tr></thead>
+      <tbody>
+        <tr><td>산불</td><td>진인프라</td><td>RTK 단말·LPWA Gateway/Controller·TVWS Base/CPE/Relay</td><td>Gateway/NMS 상위 상태·위치·품질</td></tr>
+        <tr><td>산불</td><td>앤디피에스</td><td>이동형 현장통신망의 제어·통신·전원·모니터링 SW</td><td>이동기지국/NMS 상위연계</td></tr>
+        <tr><td>산불</td><td>ETRI / 에스플러스텍</td><td>이음5G·LEO·AI-RAN / LTE·400MHz 양방향 무전</td><td>망 품질·전환 / 무전 Gateway 상태</td></tr>
+        <tr><td>산불</td><td>리모샷 / 새암정보기술</td><td>VR 검증 SW / 산불 대응 GCS 공급</td><td>검증결과·로그 / GCS 상태(규격 협의)</td></tr>
+        <tr><td>산사태</td><td>KT / 진인프라</td><td>5G망·Supervisor / EOIR·모뎀·CUSTOM GCS·DMS·알림 구축</td><td>KT/GCS/DMS Northbound Adapter</td></tr>
+        <tr><td>산사태</td><td>셀코 / 천풍</td><td>Ref_AP·Rover_AP 탐지장비 / 드론 운용·탑재</td><td>탐지결과·기체/GCS 상태</td></tr>
+        <tr><td>공통</td><td>미디어울산 / 만듦</td><td>현장 실증 데이터셋 / CSV-DXF-CAD 변환 SW</td><td>실시간망이 아닌 보안 배치 적재</td></tr>
+        <tr><td>공통</td><td>투비유니콘</td><td>표준 API·클라우드·DB·AI·통합상황판·자산 UUID</td><td>Gateway/GCS/NMS/Service 이후 전체</td></tr>
+      </tbody>
+    </table>
+    <div class="caution">
+      <h2>제출 시 과장하면 안 되는 경계</h2>
+      <ul>
+        <li>무전은 상황실-현장 음성 연계가 의무이나, 웹 대시보드의 음성 재생·녹음·PTT 원격조작은 원문에 직접 명시되지 않았다.</li>
+        <li>VR은 AI 통신음영 검증 결과·시나리오·로그의 관제 연계이며, HMD 실시간 영상 스트리밍이나 대시보드 내 VR 렌더링은 필수 범위가 아니다.</li>
+        <li>TVWS와 이음5G만으로 일반 인터넷/클라우드 연결이 완성되는 것은 아니다. Core·외부 IP 출구·LTE/위성/기관망·VPN 등 백홀이 필요하다.</li>
+        <li>장비사가 제공하지 않은 Serial/전용 RF/비행·영상 프로토콜을 HTTP/JSON으로 단정하지 않는다. HTTP/JSON은 Gateway/GCS/NMS 이후 Northbound 우선안이다.</li>
+        <li>재난문자로 일반 스마트폰 Wi-Fi를 임의 활성화하는 기능은 OS 정책상 제약이 있으며 정부·통신사·제조사 협력이 전제된다.</li>
+        <li>KT Cloud·PostgreSQL/PostGIS는 운영 실장 목표이고, 현재 Supabase·포트별 인스턴스는 개발·검증 환경으로 구분한다.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="sequence-grid" aria-label="단계별 통신·처리 절차">
+    <section class="sequence-card wf">
+      <h2>산불 원바이원 통신 절차</h2>
+      <ol>
+        <li>이동형 기준국/NTRIP 보정정보를 RTCM 기반 경량 데이터로 변환한다.</li>
+        <li>LPWA Gateway가 보정정보를 대원 RTK 단말에 멀티캐스트하고, 단말은 보정 위치·상태를 회신한다.</li>
+        <li>무전 음성은 400MHz Gateway와 TVWS 오디오 연동을 통해 이동형 지휘소로 집선한다.</li>
+        <li>TVWS·이음5G·LTE·LEO 가운데 가용 회선을 본딩/스위칭하여 외부 IP 백홀을 확보한다.</li>
+        <li>Gateway/NMS Adapter가 UUID·사건·시각·위치·상태·품질을 통합 API 계약으로 정규화한다.</li>
+        <li>Cloud DB·통신음영 AI·상황판이 저장·분석·표출하고, 경보와 운용결정은 현장으로 피드백한다.</li>
+      </ol>
+    </section>
+    <section class="sequence-card ls">
+      <h2>산사태 원바이원 통신 절차</h2>
+      <ol>
+        <li>대원 단말은 드론 중계 LTE를 통해 위치·활동정보를 전송하고, GCS는 기체·임무·EOIR 상태를 수집한다.</li>
+        <li>Ref_AP/Rover_AP는 스마트폰 Wi-Fi RSSI·위상·RTT를 수집하고 IR-UWB/GPR 탐지값을 좌표와 결합한다.</li>
+        <li>KT Supervisor는 5G 품질·파라미터·틸팅·장애를 관리하고 CUSTOM GCS·DMS는 드론과 경보를 통합한다.</li>
+        <li>긴급통신복구차량/드론 중계가 LTE·5G·기관망 백홀로 Cloud Ingress에 현장 데이터를 전달한다.</li>
+        <li>Northbound Adapter가 장비별 원시 규격을 보존하면서 공통 자산 UUID와 사건·시각·좌표를 부여한다.</li>
+        <li>Cloud Container·위치융합 AI·3D 디지털트윈이 결과를 통합관제에 제공하고 현장 지휘로 환류한다.</li>
+      </ol>
+    </section>
+    <section class="sequence-card ops">
+      <h2>공통 운영·DevOps 관측/피드백 절차</h2>
+      <ol>
+        <li>자산 등록 시 UUID와 제조번호·자산관리번호·장비유형을 매핑하고 연결 인스턴스를 식별한다.</li>
+        <li>Gateway/GCS/NMS별 Adapter에서 인증·스키마·단위·좌표계·시각 동기화를 검증한다.</li>
+        <li>Ingress에서 사건 단위 수집, 중복제거, 오류격리 후 PostgreSQL/PostGIS와 객체저장소에 분리 적재한다.</li>
+        <li>최근 수신시각·지연·손실·위치품질·보정상태를 관측하여 지도 간선의 정상/지연/두절 상태로 표현한다.</li>
+        <li>API·DB 스키마와 장비 Adapter는 버전으로 배포하며 현장 규격 변경 시 개별 Adapter만 교체한다.</li>
+        <li>경보·운용결과·VR 검증로그를 감사기록으로 남기고 장애·성능 결과를 다음 배포와 망 운용에 반영한다.</li>
+      </ol>
+    </section>
+  </div>
+
+  <div class="gate-strip" aria-label="제출 및 구축 검수 게이트">
+    <div class="gate"><strong>G1 장비 인수</strong><span>품명·수량·시리얼·사진·자산 UUID 대조</span></div>
+    <div class="gate"><strong>G2 망 연동</strong><span>현장 접속망과 외부 IP 백홀을 분리 시험</span></div>
+    <div class="gate"><strong>G3 데이터 연동</strong><span>Northbound 필드·단위·시각·좌표·오류코드 검증</span></div>
+    <div class="gate"><strong>G4 관제 인수</strong><span>지도·경보·이력·품질·감사로그 시나리오 확인</span></div>
+  </div>
+
+  <div class="docline"><strong>문서코드:</strong> WF-P 산불 연구개발계획서 · WF-A 산불 2025 연차보고서 · LS-P 산사태 연구개발계획서 · LS-A 산사태 2025 연차보고서 · VR-SOW 리모샷 과업지시서 · LS-C1/2 산사태 관제플랫폼 1/2년차 계약 별첨 · DATA-SOW 미디어울산 과업지시서 · 3D-SOW 만듦 과업지시서 · GCS-C 새암정보기술 GCS 계약 · ICD v0.9 투비유니콘 업체협의용 Northbound 인터페이스 문서</div>
+</section>
+
+</body>
+</html>

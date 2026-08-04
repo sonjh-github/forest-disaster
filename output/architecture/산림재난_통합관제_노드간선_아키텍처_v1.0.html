@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>산림재난 통합관제 노드-간선 아키텍처</title>
+<style>
+  @page { size: A3 landscape; margin: 8mm; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #ffffff; color: #172033; font-family: "Malgun Gothic", "Noto Sans KR", sans-serif; }
+  main { width: 100%; padding: 12px; }
+  svg { display: block; width: 100%; height: auto; }
+  .cluster { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; rx: 18; }
+  .cluster-cloud { fill: #f4f7ff; stroke: #345b9d; stroke-width: 3; rx: 18; }
+  .cluster-beta { fill: #fafafa; stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 10 8; rx: 18; }
+  .lane { stroke: #cbd5e1; stroke-width: 1.5; stroke-dasharray: 7 7; }
+  .cluster-title { fill: #1e3a5f; font-size: 22px; font-weight: 700; }
+  .lane-title { fill: #475569; font-size: 17px; font-weight: 700; }
+  .edge { fill: none; stroke: #64748b; stroke-width: 2.4; marker-end: url(#arrow); }
+  .edge-both { fill: none; stroke: #64748b; stroke-width: 2.4; marker-start: url(#arrowStart); marker-end: url(#arrow); }
+  .edge-main { stroke: #24528a; stroke-width: 3.2; }
+  .edge-beta { fill: none; stroke: #9ca3af; stroke-width: 2; stroke-dasharray: 8 6; marker-end: url(#arrowMuted); }
+  .edge-label rect { fill: #ffffff; stroke: #cbd5e1; rx: 7; }
+  .edge-label text { fill: #334155; font-size: 13px; text-anchor: middle; }
+  .edge-label .sub { fill: #64748b; font-size: 11px; }
+  .nodebox { width: 100%; height: 100%; padding: 10px 12px; background: #ffffff; border: 2px solid #345b9d; border-radius: 11px; overflow: hidden; }
+  .nodebox.pending { border-color: #c26b24; border-style: dashed; background: #fffaf4; }
+  .nodebox.design { border-color: #6d4ca3; background: #faf7ff; }
+  .nodebox.current { border-color: #34825a; background: #f5fcf8; }
+  .nodebox.beta { border-color: #9ca3af; border-style: dashed; background: #fafafa; }
+  .nodebox.primary { border-width: 3px; background: #eef4ff; }
+  .nodebox h3 { margin: 0 0 4px; color: #173a63; font-size: 16px; line-height: 1.25; }
+  .nodebox.pending h3 { color: #8a4718; }
+  .nodebox.design h3 { color: #553685; }
+  .nodebox.current h3 { color: #246442; }
+  .nodebox p { margin: 2px 0; font-size: 12px; line-height: 1.25; color: #334155; }
+  .nodebox .proto { margin-top: 5px; padding-top: 4px; border-top: 1px solid #dbe3ee; color: #64748b; font-size: 11px; }
+  .legend text { fill: #475569; font-size: 13px; }
+  .footer { fill: #64748b; font-size: 12px; }
+  @media print { main { padding: 0; } }
+</style>
+</head>
+<body>
+<main>
+<svg viewBox="0 0 2400 1600" role="img" aria-labelledby="graphTitle graphDesc">
+  <title id="graphTitle">산림재난 통합관제 노드-간선 아키텍처</title>
+  <desc id="graphDesc">산불과 산사태 현장 장비, 업체 게이트웨이, 통신망, KT Cloud 운영 API, PostgreSQL과 베타 Supabase를 연결한 상세 그래프</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/></marker>
+    <marker id="arrowStart" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 10 0 L 0 5 L 10 10 z" fill="#64748b"/></marker>
+    <marker id="arrowMuted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#9ca3af"/></marker>
+  </defs>
+
+  <text x="30" y="36" class="cluster-title" style="font-size:28px">산림재난 통합관제 목표 아키텍처 - 노드·간선 그래프</text>
+  <text x="30" y="62" class="footer">주 경로: 외부 장비 → 업체 Gateway/GCS/NMS → IP 백홀 → KT Cloud 통합 API → PostgreSQL/PostGIS → 상황판</text>
+
+  <rect x="20" y="85" width="1500" height="1195" class="cluster"/>
+  <text x="42" y="118" class="cluster-title">현장 장비·외부 연계 영역</text>
+  <line x1="35" y1="660" x2="1505" y2="660" class="lane"/>
+  <text x="42" y="150" class="lane-title">산불</text>
+  <text x="42" y="693" class="lane-title">산사태</text>
+
+  <rect x="1540" y="85" width="840" height="1195" class="cluster-cloud"/>
+  <text x="1565" y="118" class="cluster-title">KT Cloud 운영환경 · 투비유니콘</text>
+
+  <!-- Wildfire field and gateway nodes -->
+  <foreignObject x="55" y="170" width="270" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>진인프라 · RTK 단말</h3><p>대원 RTK-GNSS 단말</p><p>위치·FIX·정확도·배터리·비상</p><div class="proto">GNSS RF · LPWA 기본 · LTE Cat.4 보조</div></div></foreignObject>
+  <foreignObject x="380" y="170" width="290" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>진인프라 · RTK 기준국</h3><p>이동형 기준국 · RTCM 생성</p><p>기준좌표·보정 가용성·보정 경과시간</p><div class="proto">GNSS RF · RTCM · LPWA Beacon</div></div></foreignObject>
+  <foreignObject x="730" y="170" width="300" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>LPWA Gateway·망 제어기</h3><p>단말 수집·채널·슬롯·백홀</p><p>실제 송신 SW/프로그램 확정 필요</p><div class="proto">LPWA RF · Ethernet/LTE IP</div></div></foreignObject>
+  <foreignObject x="1090" y="170" width="360" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>진인프라 Northbound 어댑터</h3><p>RTK 위치·측위품질·RTCM 상태</p><p>LPWA/LTE 활성망·전환·Gateway 상태</p><div class="proto">HTTPS/JSON 제안 · REST/MQTT/TCP 수정안 가능</div></div></foreignObject>
+
+  <foreignObject x="55" y="325" width="270" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>앤디피에스 · TVWS CPE</h3><p>현장 단말측 TVWS 무선장비</p><p>Base-CPE 링크·채널·신호품질</p><div class="proto">TVWS 400 MHz RF</div></div></foreignObject>
+  <foreignObject x="380" y="325" width="290" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>TVWS Base·L3·LTE Gateway</h3><p>이동기지국측 Base Station</p><p>L3 Switch·Ethernet 인입·외부 백홀</p><div class="proto">TVWS RF · Ethernet · LTE/5G/LEO</div></div></foreignObject>
+  <foreignObject x="730" y="325" width="300" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>이동기지국 관리 SW/NMS</h3><p>링크·연결단말·백홀·장애 집계</p><p>제어 명령·오류코드 확인 필요</p><div class="proto">Ethernet/IP · NMS 내부규격</div></div></foreignObject>
+  <foreignObject x="1090" y="325" width="360" height="120"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>앤디피에스 Northbound 어댑터</h3><p>TVWS 링크·품질·채널·단말·백홀</p><p>관리 SW/NMS/별도 프로그램 중 확정</p><div class="proto">HTTPS/JSON 제안 · REST/MQTT/TCP/SNMP</div></div></foreignObject>
+
+  <foreignObject x="55" y="480" width="270" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>새암정보기술 · 산불 GCS</h3><p>산불 대응 드론·GCS 시스템</p><p>기체·임무·위치·영상 메타데이터</p><div class="proto">이음5G/IP · MAVLink 여부 확인 필요</div></div></foreignObject>
+  <foreignObject x="380" y="480" width="290" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>ETRI · 이음5G/LEO</h3><p>5G UE·스몰셀·5G Core/UPF</p><p>AI-RAN·LEO NTN·서비스 연속성</p><div class="proto">USB/Ethernet · 5G NR · N6/IP</div></div></foreignObject>
+  <foreignObject x="730" y="480" width="300" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>드론 통신서버/GCS 어댑터</h3><p>드론 상태·임무·영상·명령 ACK</p><p>현재 베타 드론서버 19999</p><div class="proto">GCS API 상세·포트·Message ID 확인 필요</div></div></foreignObject>
+  <foreignObject x="1090" y="480" width="360" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>무전·VR·응용 연계</h3><p>에스플러스: LTE/400 MHz 무전 Gateway</p><p>리모샷: VR 시나리오·검증·로그·LLM 자료</p><div class="proto">무전 업체 API · VR HTTPS/JSON/파일 협의</div></div></foreignObject>
+
+  <!-- Landslide nodes -->
+  <foreignObject x="55" y="720" width="270" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>천풍무인항공 · 중계 드론</h3><p>메인·서비스 중계 드론</p><p>EO/IR 렌즈·탑재체·비행 SW</p><div class="proto">5G/IP · 비행/영상 규격 확인 필요</div></div></foreignObject>
+  <foreignObject x="380" y="720" width="290" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>Custom GCS</h3><p>드론·통신단말 일체관제</p><p>임무·위치·자세·영상·명령</p><div class="proto">MAVLink/RTSP/SRT/WebRTC 여부 확인</div></div></foreignObject>
+  <foreignObject x="730" y="720" width="300" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>KT 5G·Supervisor·DMS</h3><p>5G 기지국/Core·모뎀</p><p>망 품질·파라미터·틸팅·장애·유지보수</p><div class="proto">5G NR · KT 관리 API 확인 필요</div></div></foreignObject>
+  <foreignObject x="1090" y="720" width="360" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>드론/KT Northbound 어댑터</h3><p>GCS·EOIR·5G 품질·Supervisor·DMS</p><p>상태·명령·영상·경보 정규화</p><div class="proto">HTTPS/JSON 제안 · 업체 API 수정안 필요</div></div></foreignObject>
+
+  <foreignObject x="55" y="890" width="270" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>셀코 · Ref_AP/Rover_AP</h3><p>Ref_AP 3~4식·Rover_AP 드론</p><p>RSSI·위상·진폭·RTT·RTK 관측</p><div class="proto">Wi-Fi 802.11 · RTK-GPS</div></div></foreignObject>
+  <foreignObject x="380" y="890" width="290" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>셀코 위치융합/GCS</h3><p>XY/XYZ 추정·원시관측 보존</p><p>AP 식별자·관측시각·위치결과</p><div class="proto">LTE/IP · 실제 Payload 확인 필요</div></div></foreignObject>
+  <foreignObject x="730" y="890" width="300" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox"><h3>미디어울산 · 데이터구축</h3><p>현장·인터뷰·환경 데이터</p><p>JSON/CSV·GPS·수집시각·메타데이터</p><div class="proto">보안 배치 납품 · 실시간 장비연계 아님</div></div></foreignObject>
+  <foreignObject x="1090" y="890" width="360" height="130"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>위치·데이터 수용 어댑터</h3><p>셀코 관측/융합결과 API</p><p>미디어울산 데이터 적재·품질·비식별</p><div class="proto">HTTPS/JSON · JSON/CSV · 보안 파일전달</div></div></foreignObject>
+
+  <foreignObject x="55" y="1060" width="615" height="125"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox pending"><h3>현장 외부망·백홀</h3><p>LTE · 이음5G · TVWS · LEO NTN · Ethernet · 기관망</p><p>이음5G 모듈만으로 클라우드 연결이 완료되지 않으며 5G Core의 N6/IP 라우팅과 인터넷·VPN·전용망 출구가 필요</p><div class="proto">IP 도달성 · 방화벽 · VPN · 인증서 · DNS · 고정 URL 확정</div></div></foreignObject>
+  <foreignObject x="730" y="1060" width="720" height="125"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>공통 Northbound 계약</h3><p>실제 HTTP 호출자는 개별 단말이 아니라 Gateway·GCS·NMS·Service</p><p>원천 장비는 sourceAssetId, 호출 주체는 reportedByAssetId로 분리</p><div class="proto">HTTPS REST/JSON · Bearer Token · UUID · Idempotency-Key · ISO 8601 · GeoJSON</div></div></foreignObject>
+
+  <!-- KT Cloud nodes -->
+  <foreignObject x="1580" y="165" width="350" height="125"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design primary"><h3>KT Cloud Ingress/Reverse Proxy</h3><p>공인 HTTPS 또는 기관 VPN/전용망</p><p>TLS 종료·방화벽·접근통제·라우팅</p><div class="proto">HTTPS 443 · 인증서/DNS/보안정책</div></div></foreignObject>
+  <foreignObject x="1980" y="165" width="350" height="125"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design primary"><h3>운영 통합 API·연계 어댑터</h3><p>인증·수집검증·중복방지·재전송</p><p>명령·오류·연계메시지·감사원장</p><div class="proto">REST/JSON · WebSocket/SSE 운영 확정</div></div></foreignObject>
+  <foreignObject x="1580" y="360" width="350" height="145"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>도메인 서비스</h3><p>사건·통합 자산 UUID·인력배정</p><p>RTK·통신망·드론·AI·미디어</p><p>토폴로지·최신상태·이력·경보</p><div class="proto">외부장비·브라우저 DB 직접접속 금지</div></div></foreignObject>
+  <foreignObject x="1980" y="360" width="350" height="145"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design primary"><h3>PostgreSQL/PostGIS · 운영 주 DB</h3><p>사건·자산 UUID·위치·망·토폴로지</p><p>최신값·시계열·명령·장애·감사로그</p><p>KT Cloud Private Network</p><div class="proto">PostgreSQL protocol/TLS · Supabase 미사용</div></div></foreignObject>
+  <foreignObject x="1580" y="575" width="350" height="145"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>KT Cloud 미디어·백업 저장</h3><p>사진·영상·보고서 원본</p><p>DB 백업·보존·복구</p><p>사건·자산·좌표·시각 메타데이터</p><div class="proto">객체저장 방식·보존정책 최종 확정</div></div></foreignObject>
+  <foreignObject x="1980" y="575" width="350" height="145"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>운영 React 상황판</h3><p>통합지도·실시간 마커</p><p>통신 토폴로지·장애 약화선</p><p>1분 스냅샷·시간재생·경보</p><div class="proto">Browser → API · HTTPS REST + 실시간 채널</div></div></foreignObject>
+  <foreignObject x="1580" y="790" width="750" height="140"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox design"><h3>운영·보안·가용성</h3><p>장비별 자격증명·최소권한·인증서·비밀정보 관리·감사기록</p><p>망 단절 버퍼·원시각 보존·재전송·중복방지·백업·복구·모니터링</p><p>외부 명령은 해당 장비 공급기관의 안전·승인 절차 적용</p><div class="proto">운영 URL · PKI/mTLS · 보존기간 · DR 구성 · SLA 확정 필요</div></div></foreignObject>
+
+  <!-- Edges: wildfire -->
+  <path d="M325 230 L380 230" class="edge-both"/>
+  <g class="edge-label"><rect x="324" y="199" width="58" height="25"/><text x="353" y="216">RTCM</text></g>
+  <path d="M670 230 L730 230" class="edge-both"/>
+  <g class="edge-label"><rect x="665" y="199" width="72" height="25"/><text x="701" y="216">Ethernet</text></g>
+  <path d="M1030 230 L1090 230" class="edge"/>
+  <path d="M1450 230 C1500 230 1515 227 1580 227" class="edge edge-main"/>
+
+  <path d="M325 385 L380 385" class="edge-both"/>
+  <g class="edge-label"><rect x="316" y="354" width="76" height="25"/><text x="354" y="371">TVWS RF</text></g>
+  <path d="M670 385 L730 385" class="edge-both"/>
+  <g class="edge-label"><rect x="665" y="354" width="72" height="25"/><text x="701" y="371">Ethernet</text></g>
+  <path d="M1030 385 L1090 385" class="edge"/>
+  <path d="M1450 385 C1500 385 1515 245 1580 245" class="edge edge-main"/>
+
+  <path d="M325 545 L380 545" class="edge-both"/>
+  <g class="edge-label"><rect x="319" y="514" width="68" height="25"/><text x="353" y="531">5G/IP</text></g>
+  <path d="M670 545 L730 545" class="edge-both"/>
+  <g class="edge-label"><rect x="661" y="514" width="80" height="25"/><text x="701" y="531">N6/VPN</text></g>
+  <path d="M1030 545 L1090 545" class="edge"/>
+  <path d="M1450 545 C1510 545 1510 263 1580 263" class="edge edge-main"/>
+
+  <!-- Edges: landslide -->
+  <path d="M325 785 L380 785" class="edge-both"/>
+  <g class="edge-label"><rect x="317" y="754" width="72" height="25"/><text x="353" y="771">비행링크</text></g>
+  <path d="M670 785 L730 785" class="edge-both"/>
+  <g class="edge-label"><rect x="663" y="754" width="76" height="25"/><text x="701" y="771">5G/IP</text></g>
+  <path d="M1030 785 L1090 785" class="edge"/>
+  <path d="M1450 785 C1510 785 1515 281 1580 281" class="edge edge-main"/>
+
+  <path d="M325 955 L380 955" class="edge-both"/>
+  <g class="edge-label"><rect x="312" y="924" width="82" height="25"/><text x="353" y="941">Wi-Fi 관측</text></g>
+  <path d="M670 955 L730 955" class="edge"/>
+  <g class="edge-label"><rect x="658" y="924" width="86" height="25"/><text x="701" y="941">LTE/배치</text></g>
+  <path d="M1030 955 L1090 955" class="edge"/>
+  <path d="M1450 955 C1520 955 1515 299 1580 299" class="edge edge-main"/>
+
+  <path d="M670 1122 L730 1122" class="edge"/>
+  <g class="edge-label"><rect x="646" y="1091" width="110" height="25"/><text x="701" y="1108">인터넷/VPN</text></g>
+  <path d="M1450 1122 C1530 1122 1515 317 1580 317" class="edge edge-main"/>
+
+  <!-- Cloud internal edges -->
+  <path d="M1930 227 L1980 227" class="edge edge-main"/>
+  <g class="edge-label"><rect x="1924" y="196" width="64" height="25"/><text x="1956" y="213">HTTPS</text></g>
+  <path d="M2155 290 L2155 360" class="edge edge-main"/>
+  <g class="edge-label"><rect x="2105" y="313" width="100" height="25"/><text x="2155" y="330">내부 서비스</text></g>
+  <path d="M1930 432 L1980 432" class="edge-both edge-main"/>
+  <g class="edge-label"><rect x="1922" y="401" width="68" height="25"/><text x="1956" y="418">SQL/TLS</text></g>
+  <path d="M1755 505 L1755 575" class="edge-both"/>
+  <g class="edge-label"><rect x="1699" y="528" width="112" height="25"/><text x="1755" y="545">미디어·백업</text></g>
+  <path d="M2155 505 L2155 575" class="edge-both"/>
+  <g class="edge-label"><rect x="2105" y="528" width="100" height="25"/><text x="2155" y="545">REST/실시간</text></g>
+  <path d="M1930 647 L1980 647" class="edge-both"/>
+
+  <!-- Beta subordinate graph -->
+  <rect x="20" y="1320" width="2360" height="235" class="cluster-beta"/>
+  <text x="42" y="1353" class="cluster-title" style="fill:#6b7280">서브 그래프 · 현재 베타 환경 / 운영 전환 대상</text>
+  <foreignObject x="55" y="1380" width="300" height="115"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox beta"><h3>Beta Frontend</h3><p>React 상황판 · 15173</p><div class="proto">REST/JSON · 현재 1초 폴링</div></div></foreignObject>
+  <foreignObject x="420" y="1380" width="330" height="115"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox beta"><h3>Beta Backend/Simulator</h3><p>Backend 18000 · 모사 18787</p><div class="proto">HTTP/JSON · 5초 시나리오 tick</div></div></foreignObject>
+  <foreignObject x="815" y="1380" width="330" height="115"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox beta"><h3>드론/하드웨어 서버</h3><p>드론 19999 · 하드웨어 18890</p><div class="proto">실장비 프로토콜 → HTTP/JSON 어댑터</div></div></foreignObject>
+  <foreignObject x="1210" y="1380" width="330" height="115"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox beta"><h3>Supabase · 베타 DB</h3><p>현재 데모 데이터 연결</p><div class="proto">운영 전 PostgreSQL/PostGIS로 대체</div></div></foreignObject>
+  <foreignObject x="1690" y="1380" width="620" height="115"><div xmlns="http://www.w3.org/1999/xhtml" class="nodebox beta"><h3>운영 전환</h3><p>데이터 계약·UUID·API 의미는 유지</p><p>운영 URL·인증·배포환경·DB 연결만 KT Cloud 기준으로 교체</p><div class="proto">Supabase 직접연결 제거 → KT Cloud API → PostgreSQL/PostGIS</div></div></foreignObject>
+  <path d="M355 1438 L420 1438" class="edge-beta"/>
+  <path d="M750 1438 L815 1438" class="edge-beta"/>
+  <path d="M750 1468 C930 1530 1080 1515 1210 1468" class="edge-beta"/>
+  <path d="M1145 1438 L1210 1438" class="edge-beta"/>
+  <path d="M1540 1438 L1690 1438" class="edge-beta"/>
+  <path d="M2310 1438 C2370 1438 2365 432 2330 432" class="edge-beta"/>
+
+  <!-- Legend -->
+  <g class="legend" transform="translate(1565,1000)">
+    <circle cx="10" cy="10" r="7" fill="#345b9d"/><text x="26" y="15">계획·계약 확인</text>
+    <circle cx="175" cy="10" r="7" fill="#c26b24"/><text x="191" y="15">업체 확인 필요</text>
+    <circle cx="350" cy="10" r="7" fill="#6d4ca3"/><text x="366" y="15">투비유니콘 설계</text>
+    <circle cx="510" cy="10" r="7" fill="#34825a"/><text x="526" y="15">현재 베타 구현</text>
+    <line x1="0" y1="44" x2="80" y2="44" class="edge"/><text x="96" y="49">단방향</text>
+    <line x1="175" y1="44" x2="255" y2="44" class="edge-both"/><text x="271" y="49">양방향</text>
+    <line x1="350" y1="44" x2="430" y2="44" class="edge-beta"/><text x="446" y="49">베타/전환</text>
+  </g>
+
+  <text x="1565" y="1105" class="footer">Northbound = 업체 Gateway/GCS/NMS/Service → KT Cloud 통합 API</text>
+  <text x="1565" y="1127" class="footer">Southbound = 단말·센서·RF·Serial/Modbus → 업체 Gateway/제어기 내부 구간</text>
+  <text x="1565" y="1149" class="footer">외부 장비와 브라우저는 PostgreSQL에 직접 연결하지 않음</text>
+  <text x="1565" y="1171" class="footer">주황 점선 노드는 실제 업체 규격·포트·Payload·명령 ACK 확인 후 확정</text>
+</svg>
+</main>
+</body>
+</html>

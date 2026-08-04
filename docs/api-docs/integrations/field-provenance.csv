@@ -1,0 +1,56 @@
+domain,capability,field_or_data,evidence_level,source,source_location,basis_or_note
+공통,network-bonding,signalStrength,CONFIRMED,WF-PLAN,p5,통신 품질 요소로 신호강도 명시
+공통,network-bonding,dataRate,CONFIRMED,WF-PLAN,p5,통신 품질 요소로 데이터 전송률 명시
+공통,network-bonding,latency,CONFIRMED,WF-PLAN,p5,통신 품질 요소로 지연시간 명시
+공통,network-bonding,packetLossPct,INFERRED,-,-,채널 품질 판단에 유용하나 검토 문서에서 필드로 직접 확인되지 않음
+공통,network-bonding,selectedChannel,CONFIRMED,WF-PLAN,p5,위성·5G·TVWS·LPWA 채널 본딩 및 스위칭
+공통,gis-coverage,terrainElevation,CONFIRMED,LS-PLAN,p12,지형 데이터에 DEM·고도·경사·향 포함
+공통,gis-coverage,viewshed,CONFIRMED,WF-REPORT,p59,Viewshed 기반 통신 커버리지 분석 입출력
+공통,transport,eventId,DESIGNED,-,-,중복 처리와 추적을 위한 통합 계약 UUID
+공통,transport,requestId,DESIGNED,-,-,요청·응답 상관관계를 위한 통합 계약 UUID
+공통,transport,schemaVersion,DESIGNED,-,-,어댑터 버전 호환을 위한 통합 계약
+공통,transport,occurredAt,INFERRED,-,-,상태와 분석 결과의 시간 정렬에 필요
+산불,rtk-terminal,latitudeLongitude,CONFIRMED,WF-PLAN; WF-REPORT,p5; p18-21,대원 위치 및 RTK-GNSS 단말 구성
+산불,rtk-terminal,accuracyM,CONFIRMED,WF-REPORT,p18-21,RTK 정밀도 하드웨어 사양
+산불,rtk-terminal,emergencySignal,CONFIRMED,WF-PLAN,p5,대원 위치와 긴급상황 전송
+산불,rtk-terminal,batteryPct,INFERRED,-,-,휴대 단말 운영에 필요하나 데이터 필드 직접 명시는 확인되지 않음
+산불,rtk-base-lpwa-gateway,rtcmCorrection,CONFIRMED,WF-REPORT,p18-21,기준국·이동국 RTK 보정 구조
+산불,tvws-network,cpeStatus,CONFIRMED,WF-REPORT,p24-27,TVWS CPE·Base Station·LTE Gateway 물리 구성
+산불,tvws-network,frequencyChannel,INFERRED,-,-,TVWS 운용상 필요하지만 교환 필드로 직접 명시되지 않음
+산불,mobile-command-hub,backhaulStatus,CONFIRMED,WF-PLAN,p5,이동형 기지국과 복수 통신망 연동
+산불,private-5g-ntn,qosMetrics,CONFIRMED,WF-REPORT,p36-45,TN·NTN 및 AI-RAN QoS 분석·설계
+산불,private-5g-ntn,implementationComplete,CONFIRMED,WF-REPORT,p45,1차년도 30%로 분석·설계·부분 구현 단계
+산불,radio-gateway,voiceOrMessage,CONFIRMED,WF-PLAN,p5,400MHz 디지털 무전 통신 연계
+산불,ai-ran,cellLoad,INFERRED,-,-,자원 최적화 입력으로 합리적이나 필드 직접 명시는 확인되지 않음
+산불,ai-ran,coverageOptimization,CONFIRMED,WF-REPORT,p36-45,AI-RAN 셀 커버리지 및 자원 최적화
+산불,relay-placement,staticData,CONFIRMED,WF-PLAN,p5,정적 데이터 기반 AI 배치
+산불,relay-placement,dynamicData,CONFIRMED,WF-PLAN,p5,동적 데이터 기반 AI 배치
+산불,ignition-detection,satelliteImage,CONFIRMED,WF-REPORT,p60-61,ViT 기반 위성영상 산불 발화점 탐지
+산불,ignition-detection,ignitionPoints,CONFIRMED,WF-REPORT,p60-61,발화점 탐지 결과
+산불,fireline-prediction,timeSeriesInput,CONFIRMED,WF-REPORT,p61-62,CNN-LSTM·Transformer 기반 화선 예측
+산불,fireline-prediction,firelineGeometry,CONFIRMED,WF-REPORT,p61-62,화선 경로 예측 결과
+산불,vehicle-road-analysis,aerialImage,CONFIRMED,WF-REPORT,p63-64,차량 탐지 및 도로 세그멘테이션 입력
+산불,vehicle-road-analysis,vehicleBoxesAndRoadMask,CONFIRMED,WF-REPORT,p63-64,탐지·세그멘테이션 결과와 평가 지표
+산사태,main-relay-drone,networkRole,CONFIRMED,LS-PLAN,p13-15,메인 중계기 드론 통신 흐름
+산사태,main-relay-drone,flightPosition,INFERRED,-,-,드론 제어에 필요하나 통합 JSON 필드로 직접 명시되지 않음
+산사태,service-relay-drone,networkRole,CONFIRMED,LS-PLAN,p13-15,서비스 중계기 드론 통신 흐름
+산사태,fixed-relay,coverageDistance10km,CONFIRMED,LS-PLAN,p13-15,TVWS 기반 약 10km 통신 설명
+산사태,gcs,signalMonitoring,CONFIRMED,LS-REPORT,p34-36,GCS 신호 및 사용자 모니터링 계획
+산사태,gcs,userMonitoring,CONFIRMED,LS-REPORT,p34-36,GCS 사용자 모니터링 계획
+산사태,ref-ap,referenceRssi,CONFIRMED,LS-REPORT,p21-24,Ref_AP·Rover_AP·RSSI·LTE·RTT 시험 구조
+산사태,rover-ap,rssi,CONFIRMED,LS-REPORT,p21-24,Rover_AP RSSI 수집
+산사태,rover-ap,rtt,CONFIRMED,LS-REPORT,p21-24,LTE 전송과 RTT 측정
+산사태,ir-uwb-gpr,rawSignal,CONFIRMED,LS-REPORT,p21-24,IR-UWB/GPR 탐지 구성
+산사태,risk-analysis,terrainWeatherForestHistoryInfra,CONFIRMED,LS-PLAN,p12,환경 위험도 분석용 데이터 항목 표
+산사태,risk-analysis,riskScore,INFERRED,-,-,위험도 분석 결과 표현은 필요하나 점수 범위·필드 미확정
+산사태,debris-flow,simulationResult,CONFIRMED,LS-PLAN,p12,산사태·토석류 관련 분석 데이터 범주
+산사태,change-detection,droneImages,CONFIRMED,LS-PLAN; LS-REPORT,p12; p25,드론 영상 기반 현장 분석 맥락
+산사태,change-detection,changeGeometry,INFERRED,-,-,변화 결과 교환 형상은 통합 구현을 위한 추정
+산사태,rssi-localization,refAndRoverRssi,CONFIRMED,LS-REPORT,p21-24,Ref_AP와 Rover_AP RSSI 기반 구조
+산사태,rssi-localization,victimPosition,CONFIRMED,LS-REPORT,p21-24,조난자 위치 추정 목적
+산사태,vital-signal-analysis,irUwbGprSignal,CONFIRMED,LS-REPORT,p21-24,IR-UWB/GPR 신호 기반 탐지
+산사태,vital-signal-analysis,confidence,INFERRED,-,-,모델 결과 품질 전달에 필요하나 필드 직접 명시 없음
+산사태,attenuation-correction,collapsedGroundSignal,CONFIRMED,LS-REPORT,p21-25,붕괴 지반 환경 신호 분석·보정 연구 맥락
+산사태,attenuation-correction,correctedSignal,INFERRED,-,-,보정 모델의 통합 출력 형태는 추정
+공통,adapter,timeoutSeconds5,DESIGNED,-,-,현재 모사·통합 테스트 운영 규칙
+공통,adapter,httpJson,DESIGNED,-,-,중간 어댑터 인력을 고려해 선택한 통합 교환 방식

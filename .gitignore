@@ -7,3 +7,7 @@
 **/*.tsbuildinfo
 .DS_Store
 Thumbs.db
+
+# 문서 렌더링 및 검증 중간 산출물
+output/**/qa*/
+outputs/gnu-role-depth/

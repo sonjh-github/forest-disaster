@@ -1,0 +1,1040 @@
+openapi: 3.1.0
+info:
+  title: 산림재해 통합 API
+  version: 1.0.0
+  description: 산림청 산불·산사태 현장 대응을 위한 공통 API 계약
+servers:
+  - url: /api/v1
+security:
+  - oauth2: [forest.read]
+tags:
+  - name: Events
+  - name: Operations
+  - name: Alerts
+  - name: Intelligence
+  - name: Wildfire
+  - name: Landslide
+  - name: External
+  - name: Gateways
+
+paths:
+  /gateways/activate:
+    post:
+      tags: [Gateways]
+      operationId: activateReportingGateway
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/GatewayActivationInput'}}
+      responses:
+        '200':
+          description: 단기 수집 토큰 발급
+          content:
+            application/json: {schema: {$ref: '#/components/schemas/GatewayActivationResponse'}}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/reporting-routes:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Gateways]
+      operationId: listReportingRoutes
+      security: [{oauth2: [forest.read]}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Gateways]
+      operationId: createReportingRoute
+      security: [{oauth2: [forest.asset.admin]}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/ReportingRouteInput'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events:
+    get:
+      tags: [Events]
+      operationId: listEvents
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - {name: disasterType, in: query, schema: {$ref: '#/components/schemas/DisasterType'}}
+        - {name: status, in: query, schema: {$ref: '#/components/schemas/EventStatus'}}
+        - {name: from, in: query, schema: {type: string, format: date-time}}
+        - {name: to, in: query, schema: {type: string, format: date-time}}
+        - $ref: '#/components/parameters/Bbox'
+      responses:
+        '200': {$ref: '#/components/responses/EventList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Events]
+      operationId: createEvent
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/EventCreate'}}
+      responses:
+        '201': {$ref: '#/components/responses/EventOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Events]
+      operationId: getEvent
+      responses:
+        '200': {$ref: '#/components/responses/EventOne'}
+        default: {$ref: '#/components/responses/Error'}
+    patch:
+      tags: [Events]
+      operationId: updateEvent
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IfMatch'}]
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json: {schema: {$ref: '#/components/schemas/EventPatch'}}
+      responses:
+        '200': {$ref: '#/components/responses/EventOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/status:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    post:
+      tags: [Events]
+      operationId: changeEventStatus
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status, changedAt]
+              properties:
+                status: {$ref: '#/components/schemas/EventStatus'}
+                changedAt: {type: string, format: date-time}
+                reason: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/EventOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /assets:
+    get:
+      tags: [Operations]
+      operationId: listAssets
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - {name: assetType, in: query, schema: {type: string}}
+        - {name: status, in: query, schema: {type: string}}
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Operations]
+      operationId: createAsset
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/AssetInput'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/resources:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: listEventResources
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Operations]
+      operationId: assignEventResource
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/ResourceAssignment'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/asset-statuses:batch:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    post:
+      tags: [Operations]
+      operationId: ingestAssetStatuses
+      security: [{oauth2: [forest.ingest]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BatchAssetStatus'}
+      responses:
+        '200': {$ref: '#/components/responses/BatchResult'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/asset-statuses/latest:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: listLatestAssetStatuses
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Bbox'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/personnel-positions:batch:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    post:
+      tags: [Operations]
+      operationId: ingestPersonnelPositions
+      security: [{oauth2: [forest.ingest]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/BatchPersonnelPosition'}
+      responses:
+        '200': {$ref: '#/components/responses/BatchResult'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/personnel-positions/latest:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: listLatestPersonnelPositions
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Bbox'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/timeline:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: getEventTimeline
+      description: 자산 상태와 대원 위치 이력을 조회하여 지도에서 1분 단위 스냅샷을 재생한다.
+      parameters:
+        - {name: from, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: to, in: query, required: true, schema: {type: string, format: date-time}}
+        - {name: stepMinutes, in: query, schema: {type: integer, enum: [1], default: 1}}
+      responses:
+        '200':
+          description: 지도 재생용 시간 이력
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/EventTimelineResponse'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/networks:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: listNetworks
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Operations]
+      operationId: createNetwork
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/NetworkInput'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/network-topology:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: getNetworkTopology
+      description: 현장 단말, 현장 접속망, 지휘·통신차량, 외부 백홀 및 클라우드 간의 논리 토폴로지를 조회한다.
+      responses:
+        '200':
+          description: 사건별 통신 토폴로지
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/NetworkTopologyResponse'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/situation-reports:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Operations]
+      operationId: listSituationReports
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Operations]
+      operationId: createSituationReport
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/SituationReportInput'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/alerts:
+    parameters: [{$ref: '#/components/parameters/EventId'}]
+    get:
+      tags: [Alerts]
+      operationId: listAlerts
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Alerts]
+      operationId: createAlertDraft
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/AlertInput'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/alerts/{alertId}/issue:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - {name: alertId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [Alerts]
+      operationId: issueAlert
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [issuedAt, recipients]
+              properties:
+                issuedAt: {type: string, format: date-time}
+                expiresAt: {type: [string, 'null'], format: date-time}
+                recipients:
+                  type: array
+                  minItems: 1
+                  items: {$ref: '#/components/schemas/AlertRecipient'}
+      responses:
+        '200': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/alerts/{alertId}/acknowledge:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - {name: alertId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [Alerts]
+      operationId: acknowledgeAlert
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientType, recipientKey, acknowledgedAt]
+              properties:
+                recipientType: {type: string, enum: [PERSON, ORGANIZATION, SYSTEM]}
+                recipientKey: {type: string}
+                acknowledgedAt: {type: string, format: date-time}
+      responses:
+        '200': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/{resourceType}:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - name: resourceType
+        in: path
+        required: true
+        description: 공통 공간·업무 자원
+        schema: {type: string, enum: [hazard-zones, routes, tasks, analyses, recommendations]}
+    get:
+      tags: [Intelligence]
+      operationId: listCommonResources
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Bbox'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Intelligence]
+      operationId: createCommonResource
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/HazardZoneInput'
+                - $ref: '#/components/schemas/RouteInput'
+                - $ref: '#/components/schemas/TaskInput'
+                - $ref: '#/components/schemas/AnalysisInput'
+                - $ref: '#/components/schemas/RecommendationInput'
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/tasks/{taskId}/status:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - {name: taskId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [Operations]
+      operationId: changeTaskStatus
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/StatusCommand'}}
+      responses:
+        '200': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/recommendations/{recommendationId}/decision:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - {name: recommendationId, in: path, required: true, schema: {type: string, format: uuid}}
+    post:
+      tags: [Intelligence]
+      operationId: decideRecommendation
+      security: [{oauth2: [forest.command]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision, decidedAt]
+              properties:
+                decision: {type: string, enum: [ACCEPTED, REJECTED, DEFERRED]}
+                decidedAt: {type: string, format: date-time}
+                reason: {type: string}
+      responses:
+        '200': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/wildfire/{resourceType}:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - name: resourceType
+        in: path
+        required: true
+        schema: {type: string, enum: [detail, firelines, spread-predictions, communication-coverages]}
+    get:
+      tags: [Wildfire]
+      operationId: listWildfireResources
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Bbox'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Wildfire]
+      operationId: createWildfireResource
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/DomainPayload'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /events/{eventId}/landslide/{resourceType}:
+    parameters:
+      - $ref: '#/components/parameters/EventId'
+      - name: resourceType
+        in: path
+        required: true
+        schema: {type: string, enum: [detail, slope-assessments, debris-flow-predictions, victim-candidates, rssi-detections]}
+    get:
+      tags: [Landslide]
+      operationId: listLandslideResources
+      parameters: [{$ref: '#/components/parameters/Cursor'}, {$ref: '#/components/parameters/Limit'}, {$ref: '#/components/parameters/Bbox'}]
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+    post:
+      tags: [Landslide]
+      operationId: createLandslideResource
+      security: [{oauth2: [forest.write]}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json: {schema: {$ref: '#/components/schemas/DomainPayload'}}
+      responses:
+        '201': {$ref: '#/components/responses/GenericOne'}
+        default: {$ref: '#/components/responses/Error'}
+
+  /files/upload-requests:
+    post:
+      tags: [External]
+      operationId: createUploadRequest
+      description: 객체저장소 사전서명 업로드 URL을 발급하며 파일 본문은 업무 DB에 저장하지 않는다.
+      security: [{oauth2: [forest.write]}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fileName, contentType, sizeBytes, purpose]
+              properties:
+                fileName: {type: string}
+                contentType: {type: string}
+                sizeBytes: {type: integer, minimum: 1}
+                purpose: {type: string, enum: [AI_INPUT, REPORT_ATTACHMENT, FIELD_IMAGE, GEOSPATIAL_DATA]}
+                checksumSha256: {type: string}
+      responses:
+        '201':
+          description: 업로드 요청 생성
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [data]
+                properties:
+                  data:
+                    type: object
+                    required: [uploadUrl, objectUri, expiresAt]
+                    properties:
+                      uploadUrl: {type: string, format: uri}
+                      objectUri: {type: string, format: uri}
+                      expiresAt: {type: string, format: date-time}
+        default: {$ref: '#/components/responses/Error'}
+
+  /reference-data/{type}:
+    get:
+      tags: [External]
+      operationId: listReferenceData
+      description: 기준정보 원천 시스템을 조회하며 응답 전체를 업무 DB에 복제하지 않는다.
+      parameters:
+        - name: type
+          in: path
+          required: true
+          schema: {type: string, enum: [organizations, jurisdictions, common-codes, personnel]}
+        - {name: query, in: query, schema: {type: string}}
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200': {$ref: '#/components/responses/GenericList'}
+        default: {$ref: '#/components/responses/Error'}
+
+components:
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.example.go.kr/oauth2/authorize
+          tokenUrl: https://auth.example.go.kr/oauth2/token
+          scopes:
+            forest.read: 조회
+            forest.write: 생성·수정
+            forest.command: 업무 상태 명령
+            forest.ingest: 단말·센서 관측 수집
+            forest.admin: 운영 관리
+
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    Cursor:
+      name: cursor
+      in: query
+      schema: {type: string}
+    Limit:
+      name: limit
+      in: query
+      schema: {type: integer, minimum: 1, maximum: 200, default: 50}
+    Bbox:
+      name: bbox
+      in: query
+      description: minLon,minLat,maxLon,maxLat
+      schema: {type: string, pattern: '^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$'}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, minLength: 8, maxLength: 100}
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      schema: {type: string}
+
+  responses:
+    EventOne:
+      description: 사건 단건
+      headers: {ETag: {schema: {type: string}}}
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/EventResponse'}}
+    EventList:
+      description: 사건 목록
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ListEnvelope'
+              - type: object
+                properties: {data: {type: array, items: {$ref: '#/components/schemas/Event'}}}
+    GenericOne:
+      description: 자원 단건
+      headers: {ETag: {schema: {type: string}}}
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/GenericEnvelope'}}
+    GenericList:
+      description: 자원 목록
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/ListEnvelope'}}
+    BatchResult:
+      description: 항목별 수집 결과
+      content:
+        application/json: {schema: {$ref: '#/components/schemas/BatchResult'}}
+    Error:
+      description: 오류
+      content:
+        application/problem+json: {schema: {$ref: '#/components/schemas/Problem'}}
+
+  schemas:
+    DisasterType: {type: string, enum: [WILDFIRE, LANDSLIDE, COMPLEX]}
+    EventStatus: {type: string, enum: [REPORTED, CONFIRMED, RESPONDING, CONTROLLED, CLOSED, CANCELLED]}
+    Geometry:
+      type: object
+      description: RFC 7946 GeoJSON Geometry, 좌표계 WGS84(EPSG:4326), 고도는 선택적 세 번째 좌표
+      required: [type, coordinates]
+      properties:
+        type: {type: string, enum: [Point, LineString, Polygon, MultiPoint, MultiLineString, MultiPolygon, GeometryCollection]}
+        coordinates: {}
+        geometries: {type: array, items: {type: object}}
+    EventCreate:
+      type: object
+      required: [eventCode, disasterType, eventName, status, sourceSystem]
+      properties:
+        eventCode: {type: string, maxLength: 100}
+        disasterType: {$ref: '#/components/schemas/DisasterType'}
+        eventName: {type: string, maxLength: 200}
+        status: {$ref: '#/components/schemas/EventStatus'}
+        severityCode: {type: [string, 'null']}
+        occurredAt: {type: [string, 'null'], format: date-time}
+        reportedAt: {type: string, format: date-time}
+        managingOrgCode: {type: [string, 'null']}
+        jurisdictionCode: {type: [string, 'null']}
+        geometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        sourceSystem: {type: string}
+        sourceRecordId: {type: [string, 'null']}
+    EventPatch:
+      type: object
+      properties:
+        eventName: {type: string}
+        severityCode: {type: [string, 'null']}
+        occurredAt: {type: [string, 'null'], format: date-time}
+        endedAt: {type: [string, 'null'], format: date-time}
+        managingOrgCode: {type: [string, 'null']}
+        jurisdictionCode: {type: [string, 'null']}
+        geometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+      additionalProperties: false
+    Event:
+      allOf:
+        - $ref: '#/components/schemas/EventCreate'
+        - type: object
+          required: [eventId, createdAt, updatedAt]
+          properties:
+            eventId: {type: string, format: uuid}
+            endedAt: {type: [string, 'null'], format: date-time}
+            createdAt: {type: string, format: date-time}
+            updatedAt: {type: string, format: date-time}
+    EventResponse:
+      type: object
+      required: [data]
+      properties: {data: {$ref: '#/components/schemas/Event'}}
+    Page:
+      type: object
+      required: [limit, hasNext]
+      properties:
+        limit: {type: integer}
+        hasNext: {type: boolean}
+        nextCursor: {type: [string, 'null']}
+    ListEnvelope:
+      type: object
+      required: [data, page]
+      properties:
+        data: {type: array, items: {type: object, additionalProperties: true}}
+        page: {$ref: '#/components/schemas/Page'}
+    GenericEnvelope:
+      type: object
+      required: [data]
+      properties: {data: {type: object, additionalProperties: true}}
+    AssetInput:
+      type: object
+      required: [assetCode, assetType, status]
+      properties:
+        assetCode: {type: string}
+        assetType: {type: string}
+        assetName: {type: [string, 'null']}
+        ownerOrgCode: {type: [string, 'null']}
+        modelName: {type: [string, 'null']}
+        serialNumber: {type: [string, 'null']}
+        status: {type: string}
+        specifications: {type: object, additionalProperties: true}
+    ResourceAssignment:
+      type: object
+      required: [assetId, assignedAt]
+      properties:
+        assetId: {type: string, format: uuid}
+        assignedOrgCode: {type: [string, 'null']}
+        mission: {type: [string, 'null']}
+        assignedAt: {type: string, format: date-time}
+        releasedAt: {type: [string, 'null'], format: date-time}
+    AssetStatusInput:
+      type: object
+      required: [clientItemId, assetId, observedAt, operationalStatus]
+      properties:
+        clientItemId: {type: string, description: 배치 내 항목 상관키}
+        assetId: {type: string, format: uuid}
+        networkId: {type: [string, 'null'], format: uuid}
+        observedAt: {type: string, format: date-time}
+        operationalStatus: {type: string}
+        geometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        batteryPct: {type: [number, 'null'], minimum: 0, maximum: 100}
+        externalPower: {type: [boolean, 'null']}
+        signalStrengthDbm: {type: [number, 'null']}
+        latencyMs: {type: [number, 'null'], minimum: 0}
+        throughputMbps: {type: [number, 'null'], minimum: 0}
+        packetLossPct: {type: [number, 'null'], minimum: 0, maximum: 100}
+        attributes: {type: object, additionalProperties: true}
+    BatchAssetStatus:
+      allOf:
+        - $ref: '#/components/schemas/ReporterContext'
+        - type: object
+          required: [items]
+          properties:
+            items: {type: array, minItems: 1, maxItems: 500, items: {$ref: '#/components/schemas/AssetStatusInput'}}
+    PersonnelPositionInput:
+      type: object
+      required: [clientItemId, personExternalId, observedAt, geometry, sourceSystem]
+      properties:
+        clientItemId: {type: string}
+        personExternalId: {type: string}
+        observedAt: {type: string, format: date-time}
+        geometry: {$ref: '#/components/schemas/Geometry'}
+        horizontalAccuracyM: {type: [number, 'null'], minimum: 0}
+        positioningMethod: {type: [string, 'null']}
+        activityStatus: {type: [string, 'null']}
+        safetyStatus: {type: [string, 'null']}
+        sourceAssetId: {type: [string, 'null'], format: uuid}
+        sourceSystem: {type: string}
+        qualityStatus: {type: string, default: RAW}
+    BatchPersonnelPosition:
+      allOf:
+        - $ref: '#/components/schemas/ReporterContext'
+        - type: object
+          required: [items]
+          properties:
+            items: {type: array, minItems: 1, maxItems: 500, items: {$ref: '#/components/schemas/PersonnelPositionInput'}}
+    BatchResult:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            required: [index, success]
+            properties:
+              index: {type: integer, minimum: 0}
+              success: {type: boolean}
+              data: {type: object, additionalProperties: true}
+              error: {type: object, additionalProperties: true}
+    ReporterContext:
+      type: object
+      description: 게이트웨이 대리 보고 시 두 필드를 함께 전송한다. 직접 단말 토큰은 생략할 수 있다.
+      dependentRequired:
+        reportedByAssetId: [reportingRole]
+        reportingRole: [reportedByAssetId]
+      properties:
+        reportedByAssetId: {type: string, format: uuid}
+        reportingRole: {type: string, enum: [GATEWAY, GCS, NMS, DEVICE, SERVICE]}
+    GatewayActivationInput:
+      type: object
+      required: [assetId, credential, eventId, reportingRole]
+      properties:
+        assetId: {type: string, format: uuid}
+        credential: {type: string, minLength: 1}
+        eventId: {type: string, format: uuid}
+        reportingRole: {type: string, enum: [GATEWAY, GCS, NMS, SERVICE]}
+    GatewayActivationResponse:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: object
+          required: [activated, assetId, reportingRole, accessToken, tokenType, expiresIn]
+          properties:
+            activated: {type: boolean, const: true}
+            assetId: {type: string, format: uuid}
+            reportingRole: {type: string, enum: [GATEWAY, GCS, NMS, SERVICE]}
+            accessToken: {type: string}
+            tokenType: {type: string, const: Bearer}
+            expiresIn: {type: integer, const: 900}
+    ReportingRouteInput:
+      type: object
+      required: [reporterAssetId, sourceAssetId, reportingRole]
+      properties:
+        reporterAssetId: {type: string, format: uuid}
+        sourceAssetId: {type: string, format: uuid}
+        capabilityId: {type: [string, 'null']}
+        reportingRole: {type: string, enum: [GATEWAY, GCS, NMS, DEVICE, SERVICE]}
+        validFrom: {type: string, format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
+    NetworkInput:
+      type: object
+      required: [networkCode, networkName, networkType, status]
+      properties:
+        networkCode: {type: string}
+        networkName: {type: string}
+        networkType: {type: string}
+        status: {type: string, enum: [PLANNED, DEPLOYING, ACTIVE, DEGRADED, UNAVAILABLE, CLOSED]}
+        operationArea: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        managingOrgCode: {type: [string, 'null']}
+        attributes: {type: object, additionalProperties: true}
+    NetworkTopologyNode:
+      type: object
+      required: [topologyNodeId, networkId, nodeCode, nodeName, nodeKind, topologyLayer, status, sortOrder]
+      properties:
+        topologyNodeId: {type: string, format: uuid}
+        networkId: {type: string, format: uuid}
+        assetId: {type: [string, 'null'], format: uuid}
+        nodeCode: {type: string}
+        nodeName: {type: string}
+        nodeKind: {type: string, enum: [DEVICE, NETWORK, GATEWAY, SERVICE]}
+        topologyLayer: {type: string, enum: [ENDPOINT, FIELD, COMMAND, BACKHAUL, CLOUD]}
+        status: {type: string, enum: [PLANNED, ACTIVE, DEGRADED, UNAVAILABLE]}
+        sortOrder: {type: integer}
+        attributes: {type: object, additionalProperties: true}
+    NetworkTopologyLink:
+      type: object
+      required: [topologyLinkId, networkId, sourceNodeId, targetNodeId, linkRole, medium, status, bidirectional, priority, observedAt]
+      properties:
+        topologyLinkId: {type: string, format: uuid}
+        networkId: {type: string, format: uuid}
+        sourceNodeId: {type: string, format: uuid}
+        targetNodeId: {type: string, format: uuid}
+        linkRole: {type: string, enum: [ACCESS, AGGREGATION, BACKHAUL, DIRECT_CLOUD]}
+        medium: {type: string, enum: [LPWA, PRIVATE_5G, RADIO_400MHZ, ETHERNET, LTE, TVWS, LEO_NTN, IP, MULTI]}
+        status: {type: string, enum: [PLANNED, ACTIVE, DEGRADED, UNAVAILABLE]}
+        bidirectional: {type: boolean}
+        priority: {type: integer, minimum: 1, maximum: 99}
+        observedAt: {type: string, format: date-time}
+        attributes: {type: object, additionalProperties: true}
+    NetworkTopology:
+      type: object
+      required: [networks, nodes, links]
+      properties:
+        networks: {type: array, items: {type: object, additionalProperties: true}}
+        nodes: {type: array, items: {$ref: '#/components/schemas/NetworkTopologyNode'}}
+        links: {type: array, items: {$ref: '#/components/schemas/NetworkTopologyLink'}}
+    NetworkTopologyResponse:
+      type: object
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/NetworkTopology'}
+    EventTimeline:
+      type: object
+      required: [from, to, stepMinutes, assetStatuses, personnelPositions]
+      properties:
+        from: {type: string, format: date-time}
+        to: {type: string, format: date-time}
+        stepMinutes: {type: integer, enum: [1]}
+        assetStatuses: {type: array, items: {type: object, additionalProperties: true}}
+        personnelPositions: {type: array, items: {type: object, additionalProperties: true}}
+    EventTimelineResponse:
+      type: object
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/EventTimeline'}
+    SituationReportInput:
+      type: object
+      required: [reportType, reportedAt, reportText, urgency, status, sourceSystem]
+      properties:
+        reportType: {type: string}
+        reportedAt: {type: string, format: date-time}
+        reporterExternalId: {type: [string, 'null']}
+        reporterOrgCode: {type: [string, 'null']}
+        geometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        title: {type: [string, 'null']}
+        reportText: {type: string}
+        urgency: {type: string}
+        status: {type: string}
+        sourceSystem: {type: string}
+        sourceRecordId: {type: [string, 'null']}
+    AlertInput:
+      type: object
+      required: [alertType, severity, title, message, sourceSystem]
+      properties:
+        alertType: {type: string}
+        severity: {type: string, enum: [INFO, WATCH, WARNING, CRITICAL]}
+        title: {type: string}
+        message: {type: string}
+        targetGeometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        issuerOrgCode: {type: [string, 'null']}
+        sourceSystem: {type: string}
+        sourceRecordId: {type: [string, 'null']}
+    AlertRecipient:
+      type: object
+      required: [recipientType, recipientKey, deliveryChannel]
+      properties:
+        recipientType: {type: string, enum: [PERSON, ORGANIZATION, SYSTEM]}
+        recipientKey: {type: string}
+        deliveryChannel: {type: string}
+    HazardZoneInput:
+      type: object
+      required: [hazardType, severity, geometry, validFrom, sourceType]
+      properties:
+        hazardType: {type: string}
+        severity: {type: string}
+        geometry: {$ref: '#/components/schemas/Geometry'}
+        validFrom: {type: string, format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
+        sourceType: {type: string}
+        confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        instructions: {type: [string, 'null']}
+    RouteInput:
+      type: object
+      required: [routeType, route, validFrom, status, generatedBy]
+      properties:
+        routeType: {type: string}
+        route: {$ref: '#/components/schemas/Geometry'}
+        destination: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        validFrom: {type: string, format: date-time}
+        validTo: {type: [string, 'null'], format: date-time}
+        status: {type: string}
+        priority: {type: [integer, 'null']}
+        generatedBy: {type: string}
+        rationale: {type: [string, 'null']}
+    TaskInput:
+      type: object
+      required: [taskCode, taskType, title, status]
+      properties:
+        parentTaskId: {type: [string, 'null'], format: uuid}
+        taskCode: {type: string}
+        taskType: {type: string}
+        title: {type: string}
+        description: {type: [string, 'null']}
+        priority: {type: integer, default: 100}
+        status: {type: string}
+        workArea: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        assignedOrgCode: {type: [string, 'null']}
+        assigneeExternalId: {type: [string, 'null']}
+        dueAt: {type: [string, 'null'], format: date-time}
+    AnalysisInput:
+      type: object
+      required: [analysisType, targetType, modelName, modelVersion, analyzedAt]
+      properties:
+        inputUri: {type: [string, 'null'], format: uri}
+        analysisType: {type: string}
+        targetType: {type: string}
+        modelName: {type: string}
+        modelVersion: {type: string}
+        analyzedAt: {type: string, format: date-time}
+        resultGeometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        resultLabel: {type: [string, 'null']}
+        confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        sourceReferences: {type: array, items: {$ref: '#/components/schemas/SourceReference'}}
+        result: {type: object, additionalProperties: true}
+        reviewStatus: {type: string, default: UNREVIEWED}
+    RecommendationInput:
+      type: object
+      required: [recommendationType, generatedAt, recommendedAction, rationale, status]
+      properties:
+        recommendationType: {type: string}
+        generatedAt: {type: string, format: date-time}
+        validUntil: {type: [string, 'null'], format: date-time}
+        priority: {type: [integer, 'null']}
+        targetAssetId: {type: [string, 'null'], format: uuid}
+        targetTaskId: {type: [string, 'null'], format: uuid}
+        recommendedGeometry: {oneOf: [{$ref: '#/components/schemas/Geometry'}, {type: 'null'}]}
+        recommendedAction: {type: string}
+        rationale: {type: string}
+        confidence: {type: [number, 'null'], minimum: 0, maximum: 1}
+        status: {type: string}
+        sourceReferences: {type: array, items: {$ref: '#/components/schemas/SourceReference'}}
+    SourceReference:
+      type: object
+      required: [sourceSystem, referenceId]
+      properties:
+        sourceSystem: {type: string}
+        referenceId: {type: string}
+        uri: {type: [string, 'null'], format: uri}
+        observedAt: {type: [string, 'null'], format: date-time}
+        version: {type: [string, 'null']}
+        checksum: {type: [string, 'null']}
+    DomainPayload:
+      type: object
+      description: 각 특화 자원의 필드는 DB DDL과 동일한 camelCase 계약을 사용하며 sourceReferences는 공통 출처 형식을 따른다.
+      additionalProperties: true
+    StatusCommand:
+      type: object
+      required: [status, changedAt]
+      properties:
+        status: {type: string}
+        changedAt: {type: string, format: date-time}
+        reason: {type: [string, 'null']}
+        resultSummary: {type: [string, 'null']}
+    Problem:
+      type: object
+      required: [type, title, status, code, traceId]
+      properties:
+        type: {type: string, format: uri-reference}
+        title: {type: string}
+        status: {type: integer}
+        code: {type: string, examples: [VALIDATION_ERROR]}
+        detail: {type: string}
+        instance: {type: string, format: uri-reference}
+        traceId: {type: string}
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field: {type: string}
+              reason: {type: string}

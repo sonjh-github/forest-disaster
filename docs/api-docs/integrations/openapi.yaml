@@ -1,0 +1,327 @@
+openapi: 3.1.0
+info:
+  title: 산림재난 장비·AI 통합 API
+  version: 1.0.0-draft
+  description: |
+    연구개발계획서와 2025년도 연차보고서에서 확인한 기능을 통합시스템용
+    HTTP/JSON 계약으로 정리한 초안이다. x-evidence-level 값은
+    CONFIRMED(문서 직접 확인), INFERRED(구현상 추정), DESIGNED(통합 규격 임의 정의)이다.
+    이 명세는 장비 제조사의 원본 프로토콜을 확정하는 문서가 아니다.
+servers:
+  - url: http://127.0.0.1:8000
+    description: 로컬 백엔드
+paths:
+  /api/v1/integrations/{capabilityId}/invoke:
+    post:
+      summary: 장비 명령 또는 AI 분석 실행
+      operationId: invokeCapability
+      x-evidence-level: DESIGNED
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationRequest"
+      responses:
+        "200":
+          description: 정상 처리됨
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "504":
+          description: 어댑터 제한시간 5초 초과
+          x-evidence-level: DESIGNED
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /api/v1/integrations/{capabilityId}/results:
+    post:
+      summary: 장비 텔레메트리 또는 AI 결과 수신
+      operationId: receiveCapabilityResult
+      x-evidence-level: DESIGNED
+      parameters:
+        - $ref: "#/components/parameters/CapabilityId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationResult"
+      responses:
+        "200":
+          description: 정상 수신
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcceptedResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+components:
+  parameters:
+    CapabilityId:
+      name: capabilityId
+      in: path
+      required: true
+      description: 기능 식별자. 허용 목록은 CapabilityId 스키마 참조.
+      schema:
+        $ref: "#/components/schemas/CapabilityId"
+  responses:
+    Error:
+      description: 요청 오류
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    CapabilityId:
+      type: string
+      x-evidence-level: DESIGNED
+      enum:
+        - common.network-bonding
+        - common.gis-coverage
+        - wildfire.rtk-terminal
+        - wildfire.rtk-base-lpwa-gateway
+        - wildfire.tvws-network
+        - wildfire.mobile-command-hub
+        - wildfire.private-5g-ntn
+        - wildfire.radio-gateway
+        - wildfire.ai-ran
+        - wildfire.relay-placement
+        - wildfire.ignition-detection
+        - wildfire.fireline-prediction
+        - wildfire.vehicle-road-analysis
+        - landslide.main-relay-drone
+        - landslide.service-relay-drone
+        - landslide.fixed-relay
+        - landslide.gcs
+        - landslide.ref-ap
+        - landslide.rover-ap
+        - landslide.ir-uwb-gpr
+        - landslide.risk-analysis
+        - landslide.debris-flow
+        - landslide.change-detection
+        - landslide.rssi-localization
+        - landslide.vital-signal-analysis
+        - landslide.attenuation-correction
+    Context:
+      type: object
+      required: [eventId, requestId, sourceSystem, occurredAt, schemaVersion]
+      x-evidence-level: DESIGNED
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          x-evidence-level: DESIGNED
+        requestId:
+          type: string
+          format: uuid
+          x-evidence-level: DESIGNED
+        sourceSystem:
+          type: string
+          x-evidence-level: INFERRED
+        occurredAt:
+          type: string
+          format: date-time
+          x-evidence-level: INFERRED
+        schemaVersion:
+          type: string
+          const: "1.0"
+          x-evidence-level: DESIGNED
+    IntegrationRequest:
+      type: object
+      required: [context, data]
+      properties:
+        context:
+          $ref: "#/components/schemas/Context"
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/DeviceCommand"
+            - $ref: "#/components/schemas/AiAnalysisRequest"
+    IntegrationResult:
+      type: object
+      required: [context, data]
+      properties:
+        context:
+          $ref: "#/components/schemas/Context"
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/DeviceTelemetry"
+            - $ref: "#/components/schemas/AiAnalysisResult"
+    Position:
+      type: object
+      required: [latitude, longitude]
+      properties:
+        latitude:
+          type: number
+          minimum: -90
+          maximum: 90
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5; WF-REPORT p18-21
+        longitude:
+          type: number
+          minimum: -180
+          maximum: 180
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5; WF-REPORT p18-21
+        altitudeM:
+          type: number
+          x-evidence-level: INFERRED
+        accuracyM:
+          type: number
+          minimum: 0
+          x-evidence-level: CONFIRMED
+          x-source: WF-REPORT p18-21 RTK 정밀도 사양
+    LinkMetric:
+      type: object
+      properties:
+        channel:
+          type: string
+          enum: [satellite, 5g, tvws, lpwa, lte, wifi, 400mhz]
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5; LS-PLAN p12-15
+        signalStrengthDbm:
+          type: number
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5; LS-REPORT p21-24
+        dataRateMbps:
+          type: number
+          minimum: 0
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5
+        latencyMs:
+          type: number
+          minimum: 0
+          x-evidence-level: CONFIRMED
+          x-source: WF-PLAN p5; LS-REPORT p21-24 RTT
+        packetLossPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          x-evidence-level: INFERRED
+    DeviceCommand:
+      type: object
+      required: [deviceId, action]
+      properties:
+        deviceId:
+          type: string
+          x-evidence-level: INFERRED
+        action:
+          type: string
+          enum: [start, stop, configure, move, switch-channel, request-status]
+          x-evidence-level: DESIGNED
+        targetPosition:
+          $ref: "#/components/schemas/Position"
+        parameters:
+          type: object
+          additionalProperties: true
+          x-evidence-level: DESIGNED
+    DeviceTelemetry:
+      type: object
+      required: [deviceId, deviceType, status]
+      properties:
+        deviceId:
+          type: string
+          x-evidence-level: INFERRED
+        deviceType:
+          type: string
+          x-evidence-level: CONFIRMED
+          x-source: 장비별 명칭은 device-api.md 근거표 참조
+        status:
+          type: string
+          enum: [online, degraded, offline, operating, standby, error]
+          x-evidence-level: DESIGNED
+        position:
+          $ref: "#/components/schemas/Position"
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/LinkMetric"
+        batteryPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          x-evidence-level: INFERRED
+        payload:
+          type: object
+          additionalProperties: true
+          description: 장비별 원본 데이터. 어댑터 합의 후 고정한다.
+          x-evidence-level: DESIGNED
+    AiAnalysisRequest:
+      type: object
+      required: [modelId, input]
+      properties:
+        modelId:
+          type: string
+          x-evidence-level: INFERRED
+        input:
+          type: object
+          additionalProperties: true
+          description: AI별 입력은 ai-api.md의 확인된 입력 표를 따른다.
+          x-evidence-level: CONFIRMED
+        options:
+          type: object
+          additionalProperties: true
+          x-evidence-level: DESIGNED
+    AiAnalysisResult:
+      type: object
+      required: [modelId, resultType, output]
+      properties:
+        modelId:
+          type: string
+          x-evidence-level: INFERRED
+        resultType:
+          type: string
+          enum:
+            - channel-selection
+            - coverage-map
+            - placement
+            - ignition-points
+            - fireline
+            - vehicle-road-mask
+            - landslide-risk
+            - debris-flow
+            - change-map
+            - victim-position
+            - vital-signal
+            - corrected-signal
+          x-evidence-level: CONFIRMED
+          x-source: AI 기능별 결과는 ai-api.md 참조
+        output:
+          type: object
+          additionalProperties: true
+          x-evidence-level: CONFIRMED
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+          x-evidence-level: INFERRED
+        modelVersion:
+          type: string
+          x-evidence-level: INFERRED
+    AcceptedResponse:
+      type: object
+      required: [success, requestId]
+      x-evidence-level: DESIGNED
+      properties:
+        success:
+          type: boolean
+        requestId:
+          type: string
+          format: uuid
+    Error:
+      type: object
+      required: [success, code, message]
+      x-evidence-level: DESIGNED
+      properties:
+        success:
+          const: false
+        code:
+          type: string
+        message:
+          type: string
