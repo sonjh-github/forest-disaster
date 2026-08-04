@@ -62,3 +62,48 @@ test("산불·산사태 좌표는 각 현장 허용 반경을 벗어나지 않�
     }
   }
 });
+
+test("산사태 XYZ 위치 모사는 4개 Ref_AP와 Rover 격자 관측을 사용한다", () => {
+  const localization = integrationTests.find(({ id }) => id === "landslide.rssi-localization");
+  assert.ok(localization);
+  const invocation = localization.createEnvelope("invoke").data;
+  assert.equal(invocation.coordinateMode, "XYZ");
+  assert.equal(invocation.detections.length, 4);
+  assert.ok(invocation.detections.every(({ detectorRole }) => detectorRole === "REF_AP"));
+  assert.ok(invocation.detections.every(({ phaseDeg, amplitude }) =>
+    Number.isFinite(phaseDeg) && Number.isFinite(amplitude)));
+  assert.ok(invocation.roverGridObservations.length > 0);
+
+  const result = localization.createEnvelope("result").data;
+  assert.equal(result.method, "REF_AP_4_XYZ_WITH_ROVER_GRID");
+  assert.equal(result.evidenceStatus, "SIMULATED_NOT_FIELD_MEASURED");
+  assert.ok(!result.signalTypes.includes("TDOA"));
+  assert.ok(!result.signalTypes.includes("UWB"));
+});
+
+test("대원 단말 모사는 LPWA 기본망과 LTE 보조망 규약을 따른다", () => {
+  const terminal = integrationTests.find(({ id }) => id === "wildfire.rtk-terminal");
+  assert.ok(terminal);
+  const result = terminal.createEnvelope("result").data;
+  assert.equal(result.primaryLink, "LPWA");
+  assert.equal(result.fallbackLink, "LTE");
+  assert.equal(result.fallbackActivated, result.activeLink === "LTE");
+});
+
+test("게이트웨이·GCS·NMS 모사는 데이터 발생 장비와 API 보고 주체를 분리한다", () => {
+  const expected = new Map([
+    ["wildfire.rtk-terminal", "GATEWAY"],
+    ["wildfire.rtk-base-lpwa-gateway", "GATEWAY"],
+    ["wildfire.tvws-network", "NMS"],
+    ["landslide.gcs", "GCS"],
+    ["landslide.main-relay-drone", "GCS"],
+    ["landslide.service-relay-drone", "GCS"],
+  ]);
+  for (const [id, role] of expected) {
+    const item = integrationTests.find((candidate) => candidate.id === id);
+    assert.ok(item, id);
+    const context = item.createEnvelope("result").context;
+    assert.match(context.reportedByAssetId, /^[0-9a-f-]{36}$/i, id);
+    assert.equal(context.reportingRole, role, id);
+  }
+});

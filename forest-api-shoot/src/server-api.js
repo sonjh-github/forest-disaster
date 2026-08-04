@@ -16,7 +16,11 @@ export class ServerApi {
       `${this.apiBaseUrl}/api/v1/integrations/${encodeURIComponent(capabilityId)}/${mode === "result" ? "results" : "invoke"}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "X-Origin": `forest-api-shoot:${capabilityId}` },
+        headers: {
+          "Content-Type": "application/json",
+          "X-Origin": `forest-api-shoot:${capabilityId}`,
+          "Idempotency-Key": envelope.context.requestId,
+        },
         body: JSON.stringify(envelope),
         signal: AbortSignal.timeout(this.timeoutMs),
       },

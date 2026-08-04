@@ -23,21 +23,27 @@ export const siteCoordinates = (domain, eastM = 0, northM = 0, altitude) => {
 export const line = (coordinates) => ({ type: "MultiLineString", coordinates: [coordinates] });
 export const polygon = (coordinates) => ({ type: "MultiPolygon", coordinates: [[[...coordinates, coordinates[0]]]] });
 
-export function envelope(eventId, sourceSystem, data) {
+export function envelope(eventId, sourceSystem, data, reporting = {}) {
   return {
-    context: { eventId, requestId: randomUUID(), sourceSystem, occurredAt: now(), schemaVersion: "1.0" },
+    context: {
+      eventId, requestId: randomUUID(), sourceSystem, occurredAt: now(), schemaVersion: "1.0",
+      ...(reporting.reportedByAssetId ? {
+        reportedByAssetId: reporting.reportedByAssetId,
+        reportingRole: reporting.reportingRole,
+      } : {}),
+    },
     data: typeof data === "function" ? data() : data,
   };
 }
 
-export function definition({ id, name, domain, category, direction, eventId, sourceSystem, result, invoke }) {
+export function definition({ id, name, domain, category, direction, eventId, sourceSystem, result, invoke, reportedByAssetId, reportingRole }) {
   return {
     id, name, domain, category, direction,
     modes: [result && "result", invoke && "invoke"].filter(Boolean),
     createEnvelope(mode) {
       const data = mode === "invoke" ? invoke : result;
       if (!data) throw Object.assign(new Error(`${id}는 ${mode} 테스트를 지원하지 않습니다.`), { statusCode: 400 });
-      return envelope(eventId, sourceSystem, data);
+      return envelope(eventId, sourceSystem, data, { reportedByAssetId, reportingRole });
     },
   };
 }
