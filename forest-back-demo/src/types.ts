@@ -6,11 +6,16 @@ export type AppEnv = {
 
 export type JwtPayload = {
   sub?: string;
+  assetId?: string;
+  eventId?: string;
+  personExternalId?: string;
+  reportingRole?: "GATEWAY" | "GCS" | "NMS" | "DEVICE" | "SERVICE";
   scope?: string;
   scopes?: string[];
   app_metadata?: {
     scope?: string;
     scopes?: string[];
+    orgCode?: string;
   };
 };
 

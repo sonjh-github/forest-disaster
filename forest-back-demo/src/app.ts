@@ -12,6 +12,7 @@ import { integrationRoutes } from "./routes/integrations.js";
 import type { ApiErrorBody, AppEnv } from "./types.js";
 import { randomUUID } from "node:crypto";
 import { serverLogger } from "./logger.js";
+import { deviceOnboardingRoutes } from "./routes/device-onboarding.js";
 
 export const app = new Hono<AppEnv>();
 const corsOrigins = config.corsOrigin.split(",").map((origin) => origin.trim()).filter(Boolean);
@@ -56,6 +57,7 @@ app.route("/api/v1/events", resourceRoutes);
 app.route("/api/v1", externalRoutes);
 app.route("/api/v1/simulator", simulatorRoutes);
 app.route("/api/v1/integrations", integrationRoutes);
+app.route("/api/v1", deviceOnboardingRoutes);
 
 app.notFound((c) => c.json({ error: { code: "NOT_FOUND", message: "Route not found" } }, 404));
 

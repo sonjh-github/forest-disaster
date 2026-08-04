@@ -1,7 +1,7 @@
 import { supabase } from "../../config.js";
 import type { IntegrationCapability, IntegrationEnvelope } from "./contracts.js";
 import { toDatabase } from "../../services/database.js";
-import { assertRegisteredAssetId } from "../../services/asset-identity.js";
+import { assertActivePersonnelAssignment, assertRegisteredAssetId } from "../../services/asset-identity.js";
 
 export async function storeIntegrationResult(
   capability: IntegrationCapability,
@@ -9,36 +9,35 @@ export async function storeIntegrationResult(
 ) {
   if (!capability.resultTarget) return { stored: false, reason: "NO_RESULT_TARGET" };
   const payload: Record<string, unknown> = toDatabase(envelope.data);
-  if ("asset_id" in payload) {
-    payload.asset_id = await assertRegisteredAssetId(payload.asset_id);
+  const supportsReporter = capability.resultTarget.schema === "core"
+    && ["personnel_position", "asset_status"].includes(capability.resultTarget.table)
+    || capability.resultTarget.schema === "wildfire"
+    && ["rtk_lpwa_gateway_status", "tvws_link_observation"].includes(capability.resultTarget.table);
+  if (supportsReporter && envelope.context.reportedByAssetId) {
+    payload.reported_by_asset_id = await assertRegisteredAssetId(envelope.context.reportedByAssetId);
+    if (capability.resultTarget.schema === "core") payload.reporting_role = envelope.context.reportingRole ?? null;
   }
+  for (const field of ["asset_id", "source_asset_id", "base_asset_id", "cpe_asset_id", "gateway_asset_id"] as const) {
+    if (field in payload) payload[field] = await assertRegisteredAssetId(payload[field]);
+  }
+  if (capability.resultTarget.schema === "core" && capability.resultTarget.table === "personnel_position") {
+    await assertActivePersonnelAssignment(
+      envelope.context.eventId,
+      payload.person_external_id,
+      payload.source_asset_id,
+    );
+  }
+
+  // GCS·드론도 다른 현장 장비와 마찬가지로 자산 마스터에 사전등록되어야 한다.
+  // 수신 데이터만으로 자산을 자동 생성하지 않는다.
   if (capability.id === "landslide.gcs") {
-    const assetId = String(payload.asset_id ?? "");
     const attributes = payload.attributes && typeof payload.attributes === "object"
       ? payload.attributes as Record<string, unknown>
       : {};
-    const systemId = Number(attributes.system_id ?? 0);
-    const sourceAddress = String(attributes.source_address ?? "unknown");
-    const { error: assetError } = await supabase.schema("core").from("asset").upsert({
-      asset_id: assetId,
-      asset_code: `GCS-UAV-${sourceAddress.replaceAll(/[^0-9a-z]/gi, "-")}-${systemId}`,
-      asset_type: "UAV",
-      asset_name: `연동 드론 ${systemId}`,
-      owner_org_code: "FOREST-UAV",
-      serial_number: `${sourceAddress}:${systemId}`,
-      status: "ACTIVE",
-      specifications: {
-        sourceSystem: envelope.context.sourceSystem,
-        mavlinkSystemId: systemId,
-        sourceAddress,
-        automaticallyRegistered: true,
-      },
-    }, { onConflict: "asset_id", ignoreDuplicates: true });
-    if (assetError) throw assetError;
     if (attributes.battery_percent !== undefined) payload.battery_pct = attributes.battery_percent;
   }
-  // core.network_status_history는 communication_network를 통해 사건에 연결되며
-  // event_id 컬럼을 직접 갖지 않는다.
+
+  // network_status_history는 communication_network를 통해 사건에 연결되며 event_id가 없다.
   if (!(capability.resultTarget.schema === "core" && capability.resultTarget.table === "network_status_history")) {
     payload.event_id = envelope.context.eventId;
   }

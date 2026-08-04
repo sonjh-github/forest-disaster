@@ -84,7 +84,7 @@ export class ForestApiClient {
       `${config.forestApiUrl}/api/v1/integrations/${config.integrationCapabilityId}/results`,
       {
         method: "POST",
-        headers: this.headers(),
+        headers: { ...this.headers(), "Idempotency-Key": envelope.context.requestId },
         body: JSON.stringify(envelope),
         signal: AbortSignal.timeout(5_000),
       },

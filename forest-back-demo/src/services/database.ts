@@ -7,6 +7,8 @@ export const commonResources: Record<string, ResourceDefinition> = {
   tasks: { schema: "core", table: "field_task", id: "task_id", orderBy: "updated_at" },
   analyses: { schema: "core", table: "ai_analysis_result", id: "analysis_result_id", orderBy: "analyzed_at" },
   recommendations: { schema: "core", table: "decision_recommendation", id: "recommendation_id", orderBy: "generated_at" },
+  kpis: { schema: "core", table: "kpi_measurement", id: "kpi_measurement_id", orderBy: "measured_to" },
+  "audit-logs": { schema: "core", table: "audit_log", id: "audit_log_id", orderBy: "occurred_at" },
 };
 
 export const wildfireResources: Record<string, ResourceDefinition> = {
