@@ -7,7 +7,7 @@
     "dev": "vite build --configLoader runner && vite preview --configLoader runner --host 127.0.0.1 --port 15173 --strictPort",
     "build": "tsc -b && vite build --configLoader runner",
     "preview": "vite preview --configLoader runner",
-    "test": "vitest run"
+    "test": "vitest run --configLoader runner"
   },
   "dependencies": {
     "maplibre-gl": "^5.24.0",

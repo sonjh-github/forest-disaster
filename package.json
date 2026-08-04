@@ -6,7 +6,7 @@
     "start": "npm run dev",
     "dev": "concurrently --restart-tries 5 --restart-after 2000 -n \"BACKEND,GCS,SHOOTER,FRONTEND\" -c \"blue,magenta,yellow,green\" \"npm run dev --prefix forest-back-demo\" \"npm run dev --prefix forest-gcs-adapter\" \"npm run dev --prefix forest-api-shoot\" \"npm run dev --prefix forest-front-demo\"",
     "install:all": "npm install --prefix forest-back-demo && npm install --prefix forest-gcs-adapter && npm install --prefix forest-api-shoot && npm install --prefix forest-front-demo",
-    "test": "npm test --prefix forest-back-demo && npm test --prefix forest-gcs-adapter && npm test --prefix forest-api-shoot && npm run build --prefix forest-front-demo"
+    "test": "npm test --prefix forest-back-demo && npm test --prefix forest-gcs-adapter && npm test --prefix forest-api-shoot && npm test --prefix forest-front-demo && npm run build --prefix forest-front-demo"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
