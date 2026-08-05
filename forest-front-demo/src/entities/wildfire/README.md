@@ -1,3 +1,3 @@
-# entities/wildfire
+# entities/wildfire — 산불 특화 경계
 
-기능 확장 위치입니다. 현재 실행 가능한 MVP는 `src/App.tsx`에 있습니다.
+화선, 확산예측과 통신커버리지를 공통 화면 모델과 분리하기 위한 위치다. 현재 API 계약과 DB는 존재하지만 프론트 독립 entity는 없으며, 실제 화선 탐지·확산 AI도 이 저장소 범위가 아니다.

@@ -1,6 +1,18 @@
-# forest-gcs-adapter
+# forest-gcs-adapter — MAVLink 현장 어댑터
 
-QGroundControl/CUSTOM GCS의 MAVLink 텔레메트리를 산림재난 통합 서버의 JSON/HTTP 계약으로 변환하는 임시 어댑터다.
+QGroundControl/CUSTOM GCS가 전달하는 MAVLink/UDP 텔레메트리를 산림재난 공통 JSON/HTTP 계약으로 변환하는 현장 측 어댑터다. 비행 프로토콜을 통합 백엔드에서 격리하는 anti-corruption layer 역할을 한다.
+
+## 데이터 흐름
+
+```text
+드론·비행제어기 → MAVLink UDP :14550
+                  → TelemetryAggregator
+                  → TelemetryStore
+                  → 공통 integration envelope
+                  → forest-back-demo HTTP API
+```
+
+`HEARTBEAT`, `SYS_STATUS`, `GLOBAL_POSITION_INT`를 조합해 위치·고도·상태·배터리·방향·속도를 구성한다. 통합 자산 UUID가 설정된 경우 원 GCS 식별자를 `sourceAssetId`로 보존한다.
 
 ## 실행
 
@@ -9,41 +21,31 @@ npm.cmd install
 npm.cmd run dev
 ```
 
-- HTTP 상태/명령 포트: `8790`
+- HTTP 상태/명령 포트: `19999`
 - MAVLink UDP 수신 포트: `14550`
-- 기본 모드: 1초 간격 모사
+- 실제 연결 전에는 simulation 모드를 사용할 수 있다.
 
-브라우저에서 `http://127.0.0.1:8790/telemetry`를 열면 현재 드론 상태를 확인할 수 있다.
-
-## 실제 QGroundControl 연결
-
-`.env`를 아래처럼 변경한다.
+실제 GCS 연결 환경 예시:
 
 ```dotenv
 MAVLINK_ENABLED=true
 SIMULATION_ENABLED=false
 MAVLINK_HOST=127.0.0.1
 MAVLINK_PORT=14550
-```
-
-QGroundControl 또는 MAVLink Router가 이 컴퓨터의 UDP `14550`으로 텔레메트리를 전달하도록 설정한다.
-
-## forest-back-demo 연결
-
-백엔드 사건 UUID와 필요 시 인증 토큰을 설정한다.
-
-```dotenv
 FOREST_API_URL=http://127.0.0.1:18000
 FOREST_EVENT_ID=00000000-0000-4000-8000-000000000000
 FOREST_API_TOKEN=
 ```
 
-`forest-back-demo/.env`에는 명령 호출 주소를 지정한다.
+## 안전 경계
 
-```dotenv
-GCS_API_URL=http://127.0.0.1:8790/command
+현재 HTTP 명령은 `PING`, `STATUS`만 허용한다. ARM·이륙·착륙·임무 변경은 `501 FLIGHT_COMMAND_DISABLED`로 차단한다. 실기체 제어는 제조사 프로토콜, 권한모델과 비행 안전 승인 전에는 구현 범위가 아니다.
+
+## 검증
+
+```powershell
+npm.cmd test
+npm.cmd run build
 ```
 
-## 안전 범위
-
-현재 어댑터는 텔레메트리 수신과 `PING`, `STATUS` 명령만 처리한다. ARM, 이륙, 착륙, 임무 변경 등의 실기체 제어는 기체·비행제어기 규격과 안전 승인을 확인한 뒤 별도 구현한다.
+자동 테스트는 MAVLink 메시지 집계, 3D Point 변환, 최신 텔레메트리 저장, HTTP 필수값, 구독 해제와 비행명령 차단을 검증한다. 실제 UDP 소켓·QGC·기체 종단시험은 아직 확인되지 않았다.

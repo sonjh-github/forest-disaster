@@ -1,5 +1,20 @@
 # 산림재해 통합 API 규약
 
+이 규약의 핵심 결정은 DB 테이블을 외부 계약으로 노출하지 않는 것이다. PostgreSQL/Supabase 구현은 내부에 두고, 외부에는 사건·자산·위치·통신망·경보와 같은 안정적인 업무 자원을 제공한다.
+
+## 구현·계획 구분
+
+| 구분 | 상태 |
+|---|---|
+| `/api/v1` REST 업무 API | 현재 Hono 코드로 구현 |
+| 장치 등록·활성화·보고 경로 | 현재 코드와 DB로 구현, 실제 DB E2E 미검증 |
+| 1초 화면 갱신 | 프론트 폴링으로 구현 |
+| `/stream` SSE/WebSocket | 설계안이며 미구현 |
+| 기관 OAuth/OIDC | 목표 규격이며 현재 코드는 HS256 JWT 골격 |
+| 객체저장소·외부 기준정보 | API 골격 또는 외부 처리 경계 |
+
+기계 판독 규격과 실제 라우트의 전 경로 자동 대조는 아직 구현되지 않았으므로, OpenAPI 존재만으로 종단 연동 완료를 주장하지 않는다.
+
 ## 1. 범위
 
 이 문서는 현재 운영 DB 스키마를 기준으로 산불·산사태 현장 대응 서비스를 연결하기 위한 API 규약이다. API는 DB 테이블을 그대로 공개하지 않고 다음 업무 자원을 중심으로 제공한다.
@@ -125,3 +140,9 @@
 5. 객체저장소 업로드, 실시간 구독, 외부 기준정보 연계
 
 통신 토폴로지는 `GET /events/{eventId}/network-topology`에서 조회한다. 응답은 물리 장비와 논리 망·클라우드를 함께 표현하는 `nodes`, 실제 통신 매체와 역할을 표현하는 `links`, 사건에 배치된 `networks`로 구성한다. 자산 장비 노드는 `assetId`로 통합 자산 UUID를 참조하고, 논리 노드는 `assetId=null`을 허용한다.
+
+## 검증 근거
+
+- envelope·UUID·시각·멱등성: `forest-back-demo/test/integration-catalog.test.ts`
+- 프론트 HTTP 오류 처리: `forest-front-demo/src/http-api/client.test.ts`
+- 전체 기능 시험 항목: [`../test/functional-test-cases.md`](../test/functional-test-cases.md)

@@ -1,5 +1,16 @@
 # 데이터베이스 적용 순서
 
+산불·산사태의 공통 업무 데이터는 `core`, 재난별 분석 결과는 `wildfire`와 `landslide`에 분리한 PostgreSQL/PostGIS 규격이다. 외부 기준정보와 파일·스트림을 무리하게 테이블화하지 않고, 사건·자산·위치·통신망·운영 증적처럼 통합 플랫폼이 책임지는 데이터만 저장한다.
+
+## 설계에서 검증한 판단
+
+- 데이터 발생 자산과 대리 보고 gateway를 `reporting_route`로 분리했다.
+- 장치 credential은 평문 대신 해시·만료·폐기 상태를 저장한다.
+- 사건별 대원-단말 활성 배정의 중복을 부분 unique index로 차단한다.
+- 연동 메시지는 request ID로 중복을 제어하고 처리상태·응답·오류를 보존한다.
+- 보호 테이블은 `anon`, `authenticated` 직접 접근을 폐지하고 `service_role`만 허용한다.
+- 인덱스는 사건·상태·관측시각 등 일반적인 조회 경로에 한정했다.
+
 1. `forest_disaster_schema.sql`로 통합 스키마를 적용한다.
 2. `forest_disaster_seed.sql`로 기준 데이터가 필요한 환경만 초기화한다.
 3. `forest_disaster_usage_views.sql`과 `forest_operational_evidence_extension.sql`을 적용한다.
@@ -28,3 +39,7 @@
 - `core.personnel_device_assignment`: 사건별 대원-단말 배정 및 해제 이력
 
 두 테이블은 브라우저용 Data API 역할에 공개하지 않고 백엔드 `service_role`만 접근한다.
+
+## 검증 수준과 한계
+
+SQL과 seed는 저장소에 존재하지만 파일 커밋만으로 실제 Supabase가 변경되지는 않는다. 전체 스키마 재설치, seed 재실행, PostGIS Z 차원, RLS 역할별 접근, 백업·복원과 대용량 실행계획은 별도 통합시험이 필요하다. 시험 항목은 [`../docs/test/functional-test-cases.md`](../docs/test/functional-test-cases.md)에 정리한다.
